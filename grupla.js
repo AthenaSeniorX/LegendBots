@@ -12,13 +12,23 @@ const {
     penalizeNetworkScope,
     reserveNetworkSlot,
 } = require('./pipeline/core');
-const { passwordForEmail } = require('./pipeline/credentials');
+const {
+    loadProtectedJson,
+    passwordForEmail,
+    saveProtectedJson,
+} = require('./pipeline/credentials');
 
 const ACCEPT_SELECTOR = '.team_invite .btn_m';
 const BASE_DIR = __dirname;
 const VERIFIED_ACCOUNTS_PATH = path.join(BASE_DIR, 'completed_accounts.json');
 const CONFIRMED_GROUPS_PATH = path.join(BASE_DIR, 'onaylanmis_gruplar.json');
 const INVITE_LINK_LOG_PATH = path.join(BASE_DIR, 'grupla.log');
+const GROUP_CONTINUATIONS_PATH = path.join(
+    BASE_DIR,
+    'pipeline-runtime',
+    'group-continuations.dpapi.json',
+);
+const GROUP_CONTINUATION_ENTROPY = 'LegendBots-group-continuations-v1';
 
 function readPositiveInteger(name, fallback, minimum = 1) {
     const rawValue = process.env[name];
@@ -549,6 +559,191 @@ function appendGroupEvent(groupRecord, event) {
         groupRecord.event_history = groupRecord.event_history.slice(-200);
     }
     groupRecord.updated_at = nowIso();
+}
+
+function emptyGroupContinuations() {
+    return {
+        version: 1,
+        file_type: 'legendbots_group_continuations',
+        groups: {},
+    };
+}
+
+function loadGroupContinuations(targetPath = GROUP_CONTINUATIONS_PATH) {
+    const stored = loadProtectedJson(targetPath, GROUP_CONTINUATION_ENTROPY);
+    if (stored === null) {
+        return emptyGroupContinuations();
+    }
+    if (stored.version !== 1 || stored.file_type !== 'legendbots_group_continuations' ||
+        !stored.groups || typeof stored.groups !== 'object' || Array.isArray(stored.groups)) {
+        throw new Error('Şifreli grup devam kaydının biçimi geçersiz.');
+    }
+    return stored;
+}
+
+function saveGroupContinuation(account, context, targetPath = GROUP_CONTINUATIONS_PATH) {
+    const state = loadGroupContinuations(targetPath);
+    state.groups[String(account.groupNumber)] = {
+        group_number: account.groupNumber,
+        leader_account_index: account.index,
+        leader_email: account.email,
+        leader_role_name: context.roleName,
+        role_name_source: context.roleNameSource || null,
+        invite_url: context.link,
+        invite_url_sha256: sha256(context.link),
+        server_id: String(context.serverId),
+        role_id: context.roleId || null,
+        initial_roster: Array.from(context.initialRoster || []),
+        updated_at: nowIso(),
+    };
+    saveProtectedJson(state, targetPath, GROUP_CONTINUATION_ENTROPY);
+}
+
+function removeGroupContinuation(groupNumber, targetPath = GROUP_CONTINUATIONS_PATH) {
+    if (!fs.existsSync(targetPath)) {
+        return false;
+    }
+    const state = loadGroupContinuations(targetPath);
+    const key = String(groupNumber);
+    if (!Object.prototype.hasOwnProperty.call(state.groups, key)) {
+        return false;
+    }
+    delete state.groups[key];
+    saveProtectedJson(state, targetPath, GROUP_CONTINUATION_ENTROPY);
+    return true;
+}
+
+function isGroupingAccountConfirmed(accountRecord) {
+    return accountRecord && (
+        accountRecord.grouping_status === 'leader_confirmed' ||
+        accountRecord.grouping_status === 'membership_confirmed'
+    );
+}
+
+function pendingGroupAccounts(group, groupRecord, minimumPosition = 2) {
+    return group.accounts.filter((account) => {
+        if (account.position < minimumPosition) {
+            return false;
+        }
+        const record = groupRecord.accounts.find((item) => item.position === account.position);
+        return !isGroupingAccountConfirmed(record);
+    });
+}
+
+function validateContinuationRecord(raw, group, groupRecord) {
+    if (!raw || typeof raw !== 'object') {
+        throw new Error(`${group.groupNumber}. grup için şifreli devam kaydı boş.`);
+    }
+    const leader = group.accounts.find((account) => account.position === 1);
+    const leaderRecord = groupRecord.accounts.find((account) => account.position === 1);
+    const inviteUrl = String(raw.invite_url || '');
+    let parsedUrl;
+    try {
+        parsedUrl = new URL(inviteUrl);
+    } catch (_error) {
+        throw new Error(`${group.groupNumber}. grup şifreli devam kaydındaki davet URL'si geçersiz.`);
+    }
+    const expectedEventUrl = new URL(CONFIG.eventUrl);
+    const requiredFields = ['sid', 'ud', 'type', 'shareuid', 'um'];
+    const expectedHash = groupRecord.invite && groupRecord.invite.url_sha256;
+    if (
+        Number(raw.group_number) !== group.groupNumber ||
+        Number(raw.leader_account_index) !== leader.index ||
+        String(raw.leader_email || '').toLowerCase() !== leader.email ||
+        parsedUrl.origin !== expectedEventUrl.origin ||
+        parsedUrl.pathname !== expectedEventUrl.pathname ||
+        requiredFields.some((field) => !parsedUrl.searchParams.get(field)) ||
+        parsedUrl.searchParams.get('type') !== 'team' ||
+        !expectedHash ||
+        sha256(inviteUrl) !== expectedHash ||
+        String(raw.invite_url_sha256 || '') !== expectedHash
+    ) {
+        throw new Error(
+            `${group.groupNumber}. grup şifreli devam kaydı kalıcı onay kaydıyla eşleşmiyor; ` +
+            'güvenlik için tamamlanan işlemler yeniden çalıştırılmayacak.',
+        );
+    }
+    const serverId = String(raw.server_id || parsedUrl.searchParams.get('sid') || '');
+    if (!serverId || (groupRecord.invite.server_id &&
+        String(groupRecord.invite.server_id) !== serverId)) {
+        throw new Error(`${group.groupNumber}. grup şifreli devam kaydının sunucusu eşleşmiyor.`);
+    }
+    const knownMembers = new Set([
+        ...(Array.isArray(raw.initial_roster) ? raw.initial_roster : []),
+        ...(Array.isArray(groupRecord.verification.last_server_roster)
+            ? groupRecord.verification.last_server_roster
+            : []),
+        ...groupRecord.accounts
+            .filter(isGroupingAccountConfirmed)
+            .map((account) => account.actual_role_name)
+            .filter(Boolean),
+    ]);
+    const roleName = String(
+        leaderRecord.actual_role_name || raw.leader_role_name || leader.nickname || '',
+    );
+    knownMembers.add(roleName);
+    return {
+        index: leader.index,
+        email: leader.email,
+        roleName,
+        roleNameSource: raw.role_name_source || 'encrypted_continuation',
+        link: inviteUrl,
+        serverId,
+        roleId: raw.role_id || null,
+        initialRoster: Array.from(knownMembers),
+        knownMembers,
+    };
+}
+
+function findLegacyContinuation(group, groupRecord, logPath = INVITE_LINK_LOG_PATH) {
+    if (!fs.existsSync(logPath)) {
+        return null;
+    }
+    const leader = group.accounts.find((account) => account.position === 1);
+    const lines = fs.readFileSync(logPath, 'utf8').split(/\r?\n/).filter(Boolean).reverse();
+    for (const line of lines) {
+        const entry = parseJson(line);
+        if (!entry || entry.event !== 'leader_invite_link_created' ||
+            Number(entry.group_number) !== group.groupNumber ||
+            Number(entry.leader_account_index) !== leader.index ||
+            sha256(entry.invite_url || '') !== (groupRecord.invite && groupRecord.invite.url_sha256)) {
+            continue;
+        }
+        const parsedUrl = new URL(entry.invite_url);
+        return {
+            group_number: group.groupNumber,
+            leader_account_index: leader.index,
+            leader_email: leader.email,
+            leader_role_name: entry.leader_role_name,
+            role_name_source: 'legacy_invite_log_migration',
+            invite_url: entry.invite_url,
+            invite_url_sha256: sha256(entry.invite_url),
+            server_id: parsedUrl.searchParams.get('sid'),
+            role_id: null,
+            initial_roster: groupRecord.verification.last_server_roster || [],
+            updated_at: nowIso(),
+        };
+    }
+    return null;
+}
+
+function loadLeaderContinuation(group, groupRecord, options = {}) {
+    const targetPath = options.targetPath || GROUP_CONTINUATIONS_PATH;
+    const state = loadGroupContinuations(targetPath);
+    let raw = state.groups[String(group.groupNumber)] || null;
+    if (!raw) {
+        raw = findLegacyContinuation(
+            group,
+            groupRecord,
+            options.logPath || INVITE_LINK_LOG_PATH,
+        );
+        if (!raw) {
+            return null;
+        }
+        state.groups[String(group.groupNumber)] = raw;
+        saveProtectedJson(state, targetPath, GROUP_CONTINUATION_ENTROPY);
+    }
+    return validateContinuationRecord(raw, group, groupRecord);
 }
 
 async function promptStartSelection(sourceData) {
@@ -1256,13 +1451,7 @@ async function createLeaderContext(page, account) {
     const knownMembers = new Set(state.teamMembers);
     knownMembers.add(roleName);
 
-    console.log(`[${email}] Takım lideri doğrulandı: ${roleName}`);
-    logLeaderInviteLink(account, roleName, leaderLink);
-    console.log(
-        `[${email}] Takım davet linki oluşturuldu ` +
-        `(güvenli iz=${sha256(leaderLink).slice(0, 16)}…).`,
-    );
-    return {
+    const context = {
         index,
         email,
         roleName,
@@ -1273,6 +1462,14 @@ async function createLeaderContext(page, account) {
         initialRoster: state.teamMembers,
         knownMembers,
     };
+    saveGroupContinuation(account, context);
+    console.log(`[${email}] Takım lideri doğrulandı: ${roleName}`);
+    logLeaderInviteLink(account, roleName, leaderLink);
+    console.log(
+        `[${email}] Takım davet bağlamı şifreli kalıcı kayda alındı ` +
+        `(güvenli iz=${sha256(leaderLink).slice(0, 16)}…).`,
+    );
+    return context;
 }
 
 function normalizedRoleName(value) {
@@ -1991,9 +2188,9 @@ function recordLeaderSuccess(state, groupRecord, accountRecord, result, runId) {
         initial_server_roster: context.initialRoster,
         invite_link: {
             full_url_stored: false,
-            reason: 'um ve kullanıcı kimliği içeren davet URLsi güvenlik için saklanmaz.',
+            reason: 'Tam URL yalnız Windows DPAPI ile şifreli devam kaydında tutulur.',
             sha256: sha256(context.link),
-            runtime_lifetime: 'memory_only_until_current_group_finishes',
+            runtime_lifetime: 'encrypted_until_current_group_finishes',
         },
     };
     pushAttemptHistory(accountRecord, {
@@ -2013,7 +2210,7 @@ function recordLeaderSuccess(state, groupRecord, accountRecord, result, runId) {
         query_fields: ['sid', 'ud', 'type', 'shareuid', 'um'],
         full_url_stored: false,
         url_sha256: sha256(context.link),
-        runtime_lifetime: 'memory_only_until_current_group_finishes',
+        runtime_lifetime: 'encrypted_until_current_group_finishes',
         server_id: context.serverId,
     };
     groupRecord.verification.last_server_roster = context.initialRoster;
@@ -2089,6 +2286,14 @@ async function processAccountWithRetries(
     const confirmedBeforeRun =
         accountRecord.grouping_status === 'leader_confirmed' ||
         accountRecord.grouping_status === 'membership_confirmed';
+
+    if (confirmedBeforeRun) {
+        console.log(
+            `[${account.email}] Kalıcı gruplama kaydında kesin tamamlanmış; ` +
+            'hiçbir giriş veya ağ isteği yapılmadan atlandı.',
+        );
+        return { kind: 'skipped', persisted: true };
+    }
 
     for (let attempt = 1; attempt <= CONFIG.maxAttempts; attempt += 1) {
         accountRecord.grouping_attempt_count += 1;

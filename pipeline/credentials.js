@@ -36,34 +36,68 @@ function runDpapi(script, input) {
     return String(result.stdout || '');
 }
 
-function saveProtectedCredentials(bundle, filePath = PROTECTED_CREDENTIALS_PATH) {
-    const sharedPassword = String(bundle.shared_password || '');
-    const accountPasswordsB64 = String(bundle.account_passwords_b64 || '');
-    if (!sharedPassword && !accountPasswordsB64) {
-        throw new Error('Korunacak credential planı boş olamaz.');
+function saveProtectedJson(payload, filePath, entropy = DPAPI_ENTROPY) {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        throw new Error('Korunacak veri nesne biçiminde olmalıdır.');
     }
-    const payload = JSON.stringify({
-        version: 1,
-        shared_password: sharedPassword || null,
-        account_passwords_b64: accountPasswordsB64 || null,
-    });
+    const serialized = JSON.stringify(payload);
     const script = [
         "Add-Type -AssemblyName System.Security",
         "$raw = [Console]::In.ReadToEnd()",
         "$plain = [Text.Encoding]::UTF8.GetBytes($raw)",
-        `$entropy = [Text.Encoding]::UTF8.GetBytes('${DPAPI_ENTROPY}')`,
+        `$entropy = [Text.Encoding]::UTF8.GetBytes('${entropy}')`,
         "$protected = [Security.Cryptography.ProtectedData]::Protect($plain, $entropy, [Security.Cryptography.DataProtectionScope]::CurrentUser)",
         "[Console]::Out.Write([Convert]::ToBase64String($protected))",
     ].join('; ');
-    const protectedData = runDpapi(script, payload).trim();
+    const protectedData = runDpapi(script, serialized).trim();
     if (!protectedData) {
-        throw new Error('Windows DPAPI boş credential çıktısı üretti.');
+        throw new Error('Windows DPAPI boş korumalı veri çıktısı üretti.');
     }
     atomicWriteJson(filePath, {
         version: 1,
         protection: 'windows_dpapi_current_user',
         protected_data: protectedData,
     });
+    return filePath;
+}
+
+function loadProtectedJson(filePath, entropy = DPAPI_ENTROPY) {
+    if (!fs.existsSync(filePath)) {
+        return null;
+    }
+    const envelope = readJson(filePath);
+    if (envelope.version !== 1 || envelope.protection !== 'windows_dpapi_current_user' ||
+        !String(envelope.protected_data || '').trim()) {
+        throw new Error('Korunan veri dosyasının biçimi geçersiz.');
+    }
+    const script = [
+        "Add-Type -AssemblyName System.Security",
+        "$raw = [Console]::In.ReadToEnd().Trim()",
+        "$protected = [Convert]::FromBase64String($raw)",
+        `$entropy = [Text.Encoding]::UTF8.GetBytes('${entropy}')`,
+        "$plain = [Security.Cryptography.ProtectedData]::Unprotect($protected, $entropy, [Security.Cryptography.DataProtectionScope]::CurrentUser)",
+        "$stdout = [Console]::OpenStandardOutput()",
+        "$stdout.Write($plain, 0, $plain.Length)",
+    ].join('; ');
+    try {
+        return JSON.parse(runDpapi(script, envelope.protected_data));
+    } catch (error) {
+        throw new Error(`Korunan veri kaydı çözülemedi: ${error.message}`);
+    }
+}
+
+function saveProtectedCredentials(bundle, filePath = PROTECTED_CREDENTIALS_PATH) {
+    const sharedPassword = String(bundle.shared_password || '');
+    const accountPasswordsB64 = String(bundle.account_passwords_b64 || '');
+    if (!sharedPassword && !accountPasswordsB64) {
+        throw new Error('Korunacak credential planı boş olamaz.');
+    }
+    const payload = {
+        version: 1,
+        shared_password: sharedPassword || null,
+        account_passwords_b64: accountPasswordsB64 || null,
+    };
+    saveProtectedJson(payload, filePath, DPAPI_ENTROPY);
     protectedCredentialCache = null;
     return filePath;
 }
@@ -78,23 +112,9 @@ function loadProtectedCredentials(filePath = PROTECTED_CREDENTIALS_PATH) {
     if (!fs.existsSync(filePath)) {
         return { shared_password: '', account_passwords_b64: '' };
     }
-    const envelope = readJson(filePath);
-    if (envelope.version !== 1 || envelope.protection !== 'windows_dpapi_current_user' ||
-        !String(envelope.protected_data || '').trim()) {
-        throw new Error('Korunan credential dosyasının biçimi geçersiz.');
-    }
-    const script = [
-        "Add-Type -AssemblyName System.Security",
-        "$raw = [Console]::In.ReadToEnd().Trim()",
-        "$protected = [Convert]::FromBase64String($raw)",
-        `$entropy = [Text.Encoding]::UTF8.GetBytes('${DPAPI_ENTROPY}')`,
-        "$plain = [Security.Cryptography.ProtectedData]::Unprotect($protected, $entropy, [Security.Cryptography.DataProtectionScope]::CurrentUser)",
-        "$stdout = [Console]::OpenStandardOutput()",
-        "$stdout.Write($plain, 0, $plain.Length)",
-    ].join('; ');
     let parsed;
     try {
-        parsed = JSON.parse(runDpapi(script, envelope.protected_data));
+        parsed = loadProtectedJson(filePath, DPAPI_ENTROPY);
     } catch (error) {
         throw new Error(`Korunan credential kaydı çözülemedi: ${error.message}`);
     }
@@ -201,6 +221,8 @@ module.exports = {
     loadAccountPasswords,
     loadProtectedCredentials,
     passwordForEmail,
+    loadProtectedJson,
     saveProtectedCredentials,
+    saveProtectedJson,
     validateCredentialsForEmails,
 };

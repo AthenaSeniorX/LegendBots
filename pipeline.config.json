@@ -32,7 +32,7 @@
     "stale_seconds": 120,
     "empty_pool_warning_seconds": 900,
     "repeat_error_seconds": 900,
-    "auto_restart_workers": true,
+    "auto_restart_workers": false,
     "restart_unhealthy_seconds": 75,
     "restart_cooldown_seconds": 120,
     "hung_worker_seconds": 300

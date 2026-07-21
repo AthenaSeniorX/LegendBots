@@ -2,7 +2,7 @@
   "version": 1,
   "file_type": "legendbots_confirmed_groups",
   "created_at": "2026-07-20T14:36:59.668Z",
-  "updated_at": "2026-07-21T15:36:45.661Z",
+  "updated_at": "2026-07-21T15:57:29.161Z",
   "grouping_policy": {
     "group_size": 4,
     "leader_position": 1,
@@ -20,7 +20,7 @@
     "verified_account_count": 4,
     "complete_group_count": 1,
     "incomplete_groups": [],
-    "last_loaded_at": "2026-07-21T15:20:07.326Z"
+    "last_loaded_at": "2026-07-21T15:52:44.425Z"
   },
   "runs": [
     {
@@ -394,6 +394,23 @@
     {
       "run_id": "775c522c-f6f2-4c9c-9f21-037eb75cc6d4",
       "started_at": "2026-07-21T15:20:07.326Z",
+      "completed_at": "2026-07-21T15:52:44.425Z",
+      "status": "interrupted",
+      "requested_start_group": 10,
+      "requested_start_member_position": 1,
+      "browser_mode": "incognito_visible",
+      "planned_groups": [
+        10
+      ],
+      "completed_groups_during_run": [],
+      "error": {
+        "at": "2026-07-21T15:52:44.425Z",
+        "message": "Önceki süreç kesin sonuç yazmadan kapandı; sonraki çalışmada kurtarıldı."
+      }
+    },
+    {
+      "run_id": "459ff9b6-734e-48d9-b7d9-ec75847370b3",
+      "started_at": "2026-07-21T15:52:44.425Z",
       "completed_at": null,
       "status": "running",
       "requested_start_group": 10,
@@ -6617,9 +6634,9 @@
       "status": "partially_confirmed",
       "confirmed_at": null,
       "created_at": "2026-07-21T15:20:07.326Z",
-      "updated_at": "2026-07-21T15:36:45.661Z",
+      "updated_at": "2026-07-21T15:57:29.161Z",
       "invite": {
-        "generated_at": "2026-07-21T15:23:31.335Z",
+        "generated_at": "2026-07-21T15:54:16.535Z",
         "generated_by_position": 1,
         "generated_by_account_index": 37,
         "generated_by_email": "hadestxz37@outlook.com",
@@ -6647,11 +6664,11 @@
         ],
         "all_members_confirmed": false,
         "last_server_roster": [
-          "2SCQAORJJN3L",
           "HFNZ3XNAGKLM",
-          "2R57KMO5U4GG"
+          "2R57KMO5U4GG",
+          "2SCQAORJJN3L"
         ],
-        "last_checked_at": "2026-07-21T15:36:30.647Z"
+        "last_checked_at": "2026-07-21T15:54:16.535Z"
       },
       "event_history": [
         {
@@ -6729,6 +6746,46 @@
           "position": 4,
           "account_index": 40,
           "run_attempt": 1
+        },
+        {
+          "at": "2026-07-21T15:52:45.248Z",
+          "run_id": "459ff9b6-734e-48d9-b7d9-ec75847370b3",
+          "type": "group_processing_started",
+          "requested_start_position": 1,
+          "actual_member_start_position": 2
+        },
+        {
+          "at": "2026-07-21T15:52:45.296Z",
+          "run_id": "459ff9b6-734e-48d9-b7d9-ec75847370b3",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 37,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-21T15:54:16.535Z",
+          "run_id": "459ff9b6-734e-48d9-b7d9-ec75847370b3",
+          "type": "leader_invite_generated",
+          "account_index": 37,
+          "role_name": "HFNZ3XNAGKLM",
+          "invite_url_sha256": "dc95d5ea6af693a73aa72c78ba27b827d1a3b6baa837bd26b06560ef0fe3328c"
+        },
+        {
+          "at": "2026-07-21T15:54:31.551Z",
+          "run_id": "459ff9b6-734e-48d9-b7d9-ec75847370b3",
+          "type": "account_attempt_started",
+          "position": 2,
+          "account_index": 38,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-21T15:57:29.161Z",
+          "run_id": "459ff9b6-734e-48d9-b7d9-ec75847370b3",
+          "type": "account_attempt_failed",
+          "position": 2,
+          "account_index": 38,
+          "run_attempt": 1,
+          "error": "Attempted to use detached Frame '6B53920B2F1554F6BE67066826F06465'."
         }
       ],
       "accounts": [
@@ -6746,19 +6803,21 @@
           "source_account_verified": true,
           "grouping_status": "leader_confirmed",
           "actual_role_name": "HFNZ3XNAGKLM",
-          "grouping_attempt_count": 1,
-          "last_attempt_at": "2026-07-21T15:20:07.701Z",
-          "confirmed_at": "2026-07-21T15:23:31.335Z",
+          "grouping_attempt_count": 2,
+          "last_attempt_at": "2026-07-21T15:52:45.296Z",
+          "confirmed_at": "2026-07-21T15:54:16.535Z",
           "last_error": null,
           "evidence": {
-            "run_id": "775c522c-f6f2-4c9c-9f21-037eb75cc6d4",
+            "run_id": "459ff9b6-734e-48d9-b7d9-ec75847370b3",
             "role_matches_verified_nickname": true,
-            "role_name_source": "binding_or_completed_accounts",
+            "role_name_source": "completed_accounts.json",
             "role_binding_verified": true,
             "server_id": "1411",
             "role_id": "310907566659550",
             "initial_server_roster": [
-              "HFNZ3XNAGKLM"
+              "HFNZ3XNAGKLM",
+              "2R57KMO5U4GG",
+              "2SCQAORJJN3L"
             ],
             "invite_link": {
               "full_url_stored": false,
@@ -6781,6 +6840,20 @@
               "attempt": 1,
               "outcome": "leader_confirmed",
               "role_name": "HFNZ3XNAGKLM"
+            },
+            {
+              "at": "2026-07-21T15:52:45.296Z",
+              "run_id": "459ff9b6-734e-48d9-b7d9-ec75847370b3",
+              "attempt": 2,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-21T15:54:16.535Z",
+              "run_id": "459ff9b6-734e-48d9-b7d9-ec75847370b3",
+              "attempt": 2,
+              "outcome": "leader_confirmed",
+              "role_name": "HFNZ3XNAGKLM"
             }
           ]
         },
@@ -6798,10 +6871,15 @@
           "source_account_verified": true,
           "grouping_status": "membership_confirmed",
           "actual_role_name": "2R57KMO5U4GG",
-          "grouping_attempt_count": 1,
-          "last_attempt_at": "2026-07-21T15:23:46.360Z",
+          "grouping_attempt_count": 2,
+          "last_attempt_at": "2026-07-21T15:54:31.551Z",
           "confirmed_at": "2026-07-21T15:29:00.743Z",
-          "last_error": null,
+          "last_error": {
+            "at": "2026-07-21T15:57:29.161Z",
+            "message": "Attempted to use detached Frame '6B53920B2F1554F6BE67066826F06465'.",
+            "run_id": "459ff9b6-734e-48d9-b7d9-ec75847370b3",
+            "run_attempt": 1
+          },
           "evidence": {
             "run_id": "775c522c-f6f2-4c9c-9f21-037eb75cc6d4",
             "role_matches_verified_nickname": true,
@@ -6875,6 +6953,21 @@
               "outcome": "membership_confirmed",
               "role_name": "2R57KMO5U4GG",
               "join_mode": "controlled_physical_mouse_agree_team_success"
+            },
+            {
+              "at": "2026-07-21T15:54:31.551Z",
+              "run_id": "459ff9b6-734e-48d9-b7d9-ec75847370b3",
+              "attempt": 2,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-21T15:57:29.161Z",
+              "run_id": "459ff9b6-734e-48d9-b7d9-ec75847370b3",
+              "attempt": 2,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "Attempted to use detached Frame '6B53920B2F1554F6BE67066826F06465'."
             }
           ]
         },

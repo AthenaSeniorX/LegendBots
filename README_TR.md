@@ -178,9 +178,10 @@ node .\automation.js --disable-worker account
 node .\automation.js --enable-worker account
 ```
 
-Devre dışı bırakılan worker manager tarafından yeniden başlatılmaz. Beklenmedik
-host kaybında ise manager kısa geçici kesintileri filtreledikten sonra workerı
-otomatik geri getirir. Manager'ın salt-okunur denetim turları ana state dosyasını
+Devre dışı bırakılan worker supervisor tarafından yeniden başlatılmaz. Beklenmedik
+host kaybında supervisor kısa geçici kesintileri filtreledikten sonra workerı
+otomatik geri getirir; manager havuzları ve iş durumlarını denetlemeyi sürdürür.
+Manager'ın salt-okunur denetim turları ana state dosyasını
 gereksiz yazmadığı için Windows dosya kilidi ve disk yükü düşüktür.
 Canlı görünen fakat beş dakika heartbeat üretmeyen bir worker asılı kabul edilir;
 yalnızca ilgili Node süreci kapatılır ve mevcut host kontrollü backoff ile yeniler.

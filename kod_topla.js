@@ -16,7 +16,7 @@ hesaptıryavbu1-400
     const password = '123321'; // Şifre
     const baslangicSayisi = 74; // Başlangıç sayısı
     const eventUrl = 'https://newserver79-lotr.oasgames.com/activity';
-    const timeout = 30000; // 30 saniye zaman aşımı
+    const timeout = 30000; // 30 saniye zaman aşımıı
 
 
     async function processAccount(email, password, emailFirstPlace, i) {

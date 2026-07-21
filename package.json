@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "grupla": "node grupla.js",
+    "grupla:plan": "node grupla.js --plan",
+    "test:grupla": "node --test grupla.test.js"
+  },
   "dependencies": {
     "firebase": "^10.14.1",
     "puppeteer": "^23.6.0"

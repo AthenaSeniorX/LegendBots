@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "_note": "Bu hesap planı yalnızca başlangıç sihirbazında varsayılan olarak gösterilir; kullanıcı her çalışmada onaylar veya elle değiştirir.",
+  "account": {
+    "prefix": "hadestxz",
+    "domain": "outlook.com",
+    "start": 1,
+    "end": 200,
+    "python": "python",
+    "script": "VarOlanHesaplardanHesapOlusturucu_Brov.py",
+    "attempt_timeout_seconds": 1800
+  },
+  "background_workers_headless": false,
+  "timing": {
+    "poll_seconds": 3,
+    "account_success_min_seconds": 15,
+    "account_success_max_seconds": 25,
+    "group_account_cooldown_seconds": 15,
+    "group_package_cooldown_seconds": 15,
+    "sign_account_cooldown_seconds": 15,
+    "sign_package_cooldown_seconds": 15,
+    "retry_base_seconds": 30,
+    "retry_max_seconds": 900,
+    "claim_lease_seconds": 7200,
+    "network_interval_ms": 15000,
+    "cloudfront_backoff_base_seconds": 120,
+    "cloudfront_backoff_max_seconds": 900,
+    "cloudfront_max_attempts": 3
+  },
+  "monitoring": {
+    "heartbeat_seconds": 10,
+    "stale_seconds": 120,
+    "empty_pool_warning_seconds": 900,
+    "repeat_error_seconds": 900,
+    "auto_restart_workers": true,
+    "restart_unhealthy_seconds": 75,
+    "restart_cooldown_seconds": 120,
+    "hung_worker_seconds": 300
+  }
+}

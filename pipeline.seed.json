@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "_instructions": [
+    "Normalde bu dosyayı doldurmanız gerekmez; completed_accounts.json ve onaylanmis_gruplar.json otomatik algılanır.",
+    "Yalnızca yerel dosyalarda güvenilir kanıtı bulunmayan eski işlemleri buraya ekleyin.",
+    "Sadece gerçekten tamamlandığını bildiğiniz kayıtları ilgili diziye ekleyin.",
+    "Parola bu dosyaya kesinlikle yazılmaz.",
+    "Gruplanmış ve sign yapılmış her paket tam olarak dört benzersiz hesap içermelidir.",
+    "Dosya çalışırken de genişletilebilir; workerlar ek kayıtları idempotent biçimde içe aktarır."
+  ],
+  "created_accounts": [],
+  "grouped_packages": [],
+  "signed_packages": [],
+  "_example_shapes": {
+    "created_account": {
+      "email": "hadestxz21@outlook.com",
+      "index": 21,
+      "nickname": "OYUNDAKI_KARAKTER",
+      "created_at": "2026-07-21T12:00:00+03:00"
+    },
+    "grouped_or_signed_package": {
+      "id": "manual-package-001",
+      "sequence": 101,
+      "grouped_at": "2026-07-21T12:30:00+03:00",
+      "signed_at": "2026-07-21T13:00:00+03:00",
+      "accounts": [
+        { "email": "hadestxz1@outlook.com", "index": 1, "nickname": "NICK1", "created_at": "2026-07-21T10:00:00+03:00" },
+        { "email": "hadestxz2@outlook.com", "index": 2, "nickname": "NICK2", "created_at": "2026-07-21T10:05:00+03:00" },
+        { "email": "hadestxz3@outlook.com", "index": 3, "nickname": "NICK3", "created_at": "2026-07-21T10:10:00+03:00" },
+        { "email": "hadestxz4@outlook.com", "index": 4, "nickname": "NICK4", "created_at": "2026-07-21T10:15:00+03:00" }
+      ]
+    }
+  }
+}

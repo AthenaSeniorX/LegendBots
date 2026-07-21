@@ -66,7 +66,10 @@ function logErrorToFile(errorText) {
     const emailFirstPlace = 'hadestxz'; // E-posta adresinin başlangıç kısmı
     const emailType = 'outlook.com'; // E-posta adresinin uzantısı
     const numberOfAccount = 20; // Hesap sayısı
-    const password = '123321'; // Şifre
+    const password = String(process.env.LEGEND_PASSWORD || '');
+    if (!password) {
+        throw new Error('LEGEND_PASSWORD ortam değişkeni gerekli.');
+    }
     const baslangicSayisi = 81; // Başlangıç sayısı
 
     const eventUrl = 'https://novoevento78-lobr.oasgames.com/activity'; // Event sayfası

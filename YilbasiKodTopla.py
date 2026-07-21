@@ -22,6 +22,9 @@ emailFirstPlace = 'junikros'
 emailType = 'outlook.com'
 numberOfAccount = 100
 baslangicSayisi = 1
+password = os.environ.get("LEGEND_PASSWORD") or getpass("Hesap şifresi: ")
+if not password:
+    raise RuntimeError("Hesap şifresi boş olamaz.")
 time.sleep(3)
 for i in range(baslangicSayisi, (baslangicSayisi + numberOfAccount)):
     email = emailFirstPlace + str(i) + "@" + emailType
@@ -34,7 +37,7 @@ for i in range(baslangicSayisi, (baslangicSayisi + numberOfAccount)):
     pyautogui.click(844,455)
     pyautogui.hotkey('ctrl', 'v') # epostayı yapıştır
     time.sleep(0.5)
-    pyperclip.copy('123321')
+    pyperclip.copy(password)
     time.sleep(0.5)
     pyautogui.click(861,543)
     time.sleep(0.5)

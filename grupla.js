@@ -5,6 +5,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 const readline = require('node:readline/promises');
 const puppeteer = require('puppeteer');
+const {
+    computeRateLimitBackoffMs,
+    loadConfig,
+    networkCooldownDelay,
+    penalizeNetworkScope,
+    reserveNetworkSlot,
+} = require('./pipeline/core');
+const { passwordForEmail } = require('./pipeline/credentials');
 
 const ACCEPT_SELECTOR = '.team_invite .btn_m';
 const BASE_DIR = __dirname;
@@ -12,7 +20,7 @@ const VERIFIED_ACCOUNTS_PATH = path.join(BASE_DIR, 'completed_accounts.json');
 const CONFIRMED_GROUPS_PATH = path.join(BASE_DIR, 'onaylanmis_gruplar.json');
 const INVITE_LINK_LOG_PATH = path.join(BASE_DIR, 'grupla.log');
 
-function readPositiveInteger(name, fallback) {
+function readPositiveInteger(name, fallback, minimum = 1) {
     const rawValue = process.env[name];
     if (rawValue === undefined || rawValue === '') {
         return fallback;
@@ -22,13 +30,14 @@ function readPositiveInteger(name, fallback) {
     if (!Number.isInteger(value) || value <= 0) {
         throw new Error(`${name} pozitif bir tam sayı olmalıdır (gelen: ${rawValue}).`);
     }
-    return value;
+    return Math.max(value, minimum);
 }
 
+const PIPELINE_DEFAULTS = loadConfig();
+
 const CONFIG = Object.freeze({
-    emailPrefix: process.env.LEGEND_EMAIL_PREFIX || 'hadestxz',
-    emailDomain: process.env.LEGEND_EMAIL_DOMAIN || 'outlook.com',
-    password: process.env.LEGEND_PASSWORD || '123321',
+    emailPrefix: PIPELINE_DEFAULTS.account.prefix,
+    emailDomain: PIPELINE_DEFAULTS.account.domain,
     groupSize: 4,
     loginUrl: 'https://www.oasgames.com/?a=ucenter&m=login',
     eventUrl: 'https://newserver79-lotr.oasgames.com/activity',
@@ -38,22 +47,22 @@ const CONFIG = Object.freeze({
     maxAttempts: readPositiveInteger('LEGEND_MAX_ATTEMPTS', 5),
     retryDelayMs: readPositiveInteger('LEGEND_RETRY_DELAY_MS', 3000),
     verificationAttempts: readPositiveInteger('LEGEND_VERIFY_ATTEMPTS', 5),
-    navigationIntervalMs: readPositiveInteger('LEGEND_NAVIGATION_INTERVAL_MS', 5000),
-    accountCooldownMs: readPositiveInteger('LEGEND_ACCOUNT_COOLDOWN_MS', 15000),
-    groupCooldownMs: readPositiveInteger('LEGEND_GROUP_COOLDOWN_MS', 60000),
-    cloudFrontBackoffMs: readPositiveInteger('LEGEND_CLOUDFRONT_BACKOFF_MS', 300000),
-    cloudFrontMaxAttempts: readPositiveInteger('LEGEND_CLOUDFRONT_MAX_ATTEMPTS', 4),
+    navigationIntervalMs: readPositiveInteger('LEGEND_NAVIGATION_INTERVAL_MS', 15000, 15000),
+    accountCooldownMs: readPositiveInteger('LEGEND_ACCOUNT_COOLDOWN_MS', 15000, 15000),
+    groupCooldownMs: readPositiveInteger('LEGEND_GROUP_COOLDOWN_MS', 15000, 15000),
+    cloudFrontBackoffMs: readPositiveInteger('LEGEND_CLOUDFRONT_BACKOFF_MS', 120000, 120000),
+    cloudFrontBackoffMaxMs: readPositiveInteger('LEGEND_CLOUDFRONT_BACKOFF_MAX_MS', 900000, 900000),
+    cloudFrontMaxAttempts: readPositiveInteger('LEGEND_CLOUDFRONT_MAX_ATTEMPTS', 3, 3),
     planOnly: process.argv.includes('--plan'),
 });
 
-let lastTopLevelNavigationAt = 0;
 let navigationGate = Promise.resolve();
 
 function sleep(milliseconds) {
     return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-async function waitForNavigationSlot(label) {
+async function waitForNavigationSlot(label, url = CONFIG.eventUrl) {
     const previousGate = navigationGate;
     let releaseGate;
     navigationGate = new Promise((resolve) => {
@@ -62,13 +71,22 @@ async function waitForNavigationSlot(label) {
 
     await previousGate;
     try {
-        const elapsed = Date.now() - lastTopLevelNavigationAt;
-        const remaining = CONFIG.navigationIntervalMs - elapsed;
-        if (remaining > 0) {
-            console.log(`${label}: sunucuyu yormamak için ${Math.ceil(remaining / 1000)} sn bekleniyor...`);
-            await sleep(remaining);
+        const cooldownDelay = await networkCooldownDelay('group');
+        if (cooldownDelay > 0) {
+            console.log(
+                `${label}: BOT 2 403 soğuması için ` +
+                `${Math.ceil(cooldownDelay / 1000)} sn bekleniyor...`,
+            );
+            await sleep(cooldownDelay);
         }
-        lastTopLevelNavigationAt = Date.now();
+        const globalDelay = await reserveNetworkSlot(url, CONFIG.navigationIntervalMs);
+        if (globalDelay > 0) {
+            console.log(
+                `${label}: ortak CloudFront sırasında ${Math.ceil(globalDelay / 1000)} sn bekleniyor ` +
+                `(istekler arası alt sınır ${Math.ceil(CONFIG.navigationIntervalMs / 1000)} sn)...`,
+            );
+            await sleep(globalDelay);
+        }
     } finally {
         releaseGate();
     }
@@ -109,31 +127,40 @@ async function cloudFrontPageInfo(page, response) {
     return { blocked, status, ...pageInfo };
 }
 
-async function waitAfterCloudFrontBlock(attempt, label, info) {
-    const delay = Math.min(
-        CONFIG.cloudFrontBackoffMs * (2 ** Math.max(0, attempt - 1)),
-        30 * 60 * 1000,
-    );
+async function waitAfterCloudFrontBlock(attempt, label, info, options = {}) {
+    const requestedDelay = computeRateLimitBackoffMs(attempt, {
+        baseMs: CONFIG.cloudFrontBackoffMs,
+        maximumMs: CONFIG.cloudFrontBackoffMaxMs,
+    });
+    const delay = await penalizeNetworkScope('legend-global', requestedDelay, undefined, {
+        worker: 'group',
+        attempt,
+        http_status: info.status || null,
+    });
     console.warn(
         `${label}: CloudFront 403 algılandı` +
         `${info.requestId ? ` (Request ID=${info.requestId})` : ''}. ` +
-        `Aynı oturum korunarak ${Math.ceil(delay / 1000)} sn beklenecek.`,
+        `Aynı oturum korunarak yalnız BOT 2 ${Math.ceil(delay / 1000)} sn bekleyecek.`,
     );
-    await sleep(delay);
+    if (options.sleep !== false) {
+        await sleep(delay);
+    }
+    return delay;
 }
 
 async function gotoWithCloudFrontRecovery(page, url, options, label) {
     let lastInfo = null;
+    let lastRetryDelayMs = CONFIG.cloudFrontBackoffMs;
     for (let attempt = 1; attempt <= CONFIG.cloudFrontMaxAttempts; attempt += 1) {
-        await waitForNavigationSlot(label);
+        await waitForNavigationSlot(label, url);
         const response = await page.goto(url, options);
         lastInfo = await cloudFrontPageInfo(page, response);
         if (!lastInfo.blocked) {
             return response;
         }
-        if (attempt < CONFIG.cloudFrontMaxAttempts) {
-            await waitAfterCloudFrontBlock(attempt, label, lastInfo);
-        }
+        lastRetryDelayMs = await waitAfterCloudFrontBlock(attempt, label, lastInfo, {
+            sleep: attempt < CONFIG.cloudFrontMaxAttempts,
+        });
     }
 
     const error = new Error(
@@ -142,6 +169,7 @@ async function gotoWithCloudFrontRecovery(page, url, options, label) {
     );
     error.preventRelogin = true;
     error.cloudFrontBlocked = true;
+    error.retryAfterSeconds = Math.ceil(lastRetryDelayMs / 1000);
     throw error;
 }
 
@@ -185,12 +213,12 @@ function escapeRegExp(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function loadVerifiedGroups() {
-    if (!fs.existsSync(VERIFIED_ACCOUNTS_PATH)) {
-        throw new Error(`Doğrulanmış hesap dosyası bulunamadı: ${VERIFIED_ACCOUNTS_PATH}`);
+function loadVerifiedGroups(verifiedAccountsPath = VERIFIED_ACCOUNTS_PATH) {
+    if (!fs.existsSync(verifiedAccountsPath)) {
+        throw new Error(`Doğrulanmış hesap dosyası bulunamadı: ${verifiedAccountsPath}`);
     }
 
-    const sourceText = fs.readFileSync(VERIFIED_ACCOUNTS_PATH, 'utf8');
+    const sourceText = fs.readFileSync(verifiedAccountsPath, 'utf8');
     const source = parseJson(sourceText);
     if (
         !source ||
@@ -731,6 +759,7 @@ async function postFormAndObserve(page, endpoint, fields) {
 async function postFormWithCloudFrontRecovery(page, endpoint, fields, label) {
     let lastResult = null;
     let lastInfo = null;
+    let lastRetryDelayMs = CONFIG.cloudFrontBackoffMs;
     for (let attempt = 1; attempt <= CONFIG.cloudFrontMaxAttempts; attempt += 1) {
         await waitForNavigationSlot(label);
         lastResult = await postFormAndObserve(page, endpoint, fields);
@@ -738,9 +767,9 @@ async function postFormWithCloudFrontRecovery(page, endpoint, fields, label) {
         if (!lastInfo.blocked) {
             return lastResult;
         }
-        if (attempt < CONFIG.cloudFrontMaxAttempts) {
-            await waitAfterCloudFrontBlock(attempt, label, lastInfo);
-        }
+        lastRetryDelayMs = await waitAfterCloudFrontBlock(attempt, label, lastInfo, {
+            sleep: attempt < CONFIG.cloudFrontMaxAttempts,
+        });
     }
 
     const error = new Error(
@@ -749,6 +778,7 @@ async function postFormWithCloudFrontRecovery(page, endpoint, fields, label) {
     );
     error.preventRelogin = true;
     error.cloudFrontBlocked = true;
+    error.retryAfterSeconds = Math.ceil(lastRetryDelayMs / 1000);
     throw error;
 }
 
@@ -987,8 +1017,9 @@ async function login(page, email, cloudFrontAttempt = 1) {
     await page.click('#fake_pass_01');
     await page.waitForSelector('#user_password', { visible: true });
     await page.click('#user_password');
-    await page.type('#user_password', CONFIG.password, { delay: 70 });
+    await page.type('#user_password', passwordForEmail(email), { delay: 70 });
 
+    await waitForNavigationSlot(`[${email}] giriş gönderimi`, CONFIG.loginUrl);
     const navigationPromise = page
         .waitForNavigation({
             waitUntil: 'networkidle2',
@@ -1032,6 +1063,12 @@ async function login(page, email, cloudFrontAttempt = 1) {
             return login(page, email, cloudFrontAttempt + 1);
         }
         if (cloudFrontInfo.blocked) {
+            const retryDelayMs = await waitAfterCloudFrontBlock(
+                cloudFrontAttempt,
+                `[${email}] giriş yanıtı`,
+                cloudFrontInfo,
+                { sleep: false },
+            );
             const error = new Error(
                 `[${email}] giriş yanıtı CloudFront 403 nedeniyle ` +
                 `${CONFIG.cloudFrontMaxAttempts} kontrollü denemede tamamlanamadı` +
@@ -1039,6 +1076,7 @@ async function login(page, email, cloudFrontAttempt = 1) {
             );
             error.preventRelogin = true;
             error.cloudFrontBlocked = true;
+            error.retryAfterSeconds = Math.ceil(retryDelayMs / 1000);
             throw error;
         }
         const visibleErrors = await page
@@ -1412,10 +1450,23 @@ async function closeInvitePanelAfterServerVerification(page) {
 }
 
 function selectMemberRegistrationRole(roleCandidates, serverId, nickname) {
-    return (roleCandidates || []).find((role) =>
-        String(role.sid) === String(serverId) &&
-        normalizedRoleName(role.roleName) === normalizedRoleName(nickname)
-    ) || null;
+    const serverRoles = (roleCandidates || []).filter(
+        (role) => String(role.sid) === String(serverId),
+    );
+    const normalizedNickname = normalizedRoleName(nickname);
+    const exact = serverRoles.find(
+        (role) => normalizedRoleName(role.roleName) === normalizedNickname,
+    );
+    if (exact) {
+        return exact;
+    }
+    if (/^(existing[ _-]?account|mevcut[ _-]?hesap)$/i.test(String(nickname || '').trim())) {
+        return serverRoles.find((role) => {
+            const value = normalizedRoleName(role.roleName);
+            return value && value !== 'boş' && value !== 'bos' && value !== 'empty';
+        }) || null;
+    }
+    return null;
 }
 
 async function ensureMemberEventRegistration(page, initialState, account, leaderContext) {
@@ -1508,14 +1559,26 @@ async function joinLeaderTeam(page, account, leaderContext) {
         leaderContext,
     );
 
-    if (state.roleName && state.roleName !== account.nickname) {
+    const placeholderNickname = /^(existing[ _-]?account|mevcut[ _-]?hesap)$/i.test(
+        String(account.nickname || '').trim(),
+    );
+    const recoveredRoleName = state.roleName ||
+        (state.memberEventRegistration && state.memberEventRegistration.role_name) || '';
+    if (state.roleName && !placeholderNickname && state.roleName !== account.nickname) {
         throw new Error(
             `Katılımcı rolü doğrulanmış hesapla eşleşmiyor. ` +
             `Beklenen=${account.nickname}, görünen=${state.roleName}.`,
         );
     }
-    const roleName = account.nickname;
-    const roleNameSource = state.roleName ? 'event_dom' : 'completed_accounts.json';
+    if (placeholderNickname && !recoveredRoleName) {
+        throw new Error(
+            `Yer tutucu hesap kaydı için gerçek rol adı etkinlik sunucusundan çözülemedi.`,
+        );
+    }
+    const roleName = placeholderNickname ? recoveredRoleName : account.nickname;
+    const roleNameSource = placeholderNickname
+        ? 'event_dom_placeholder_recovery'
+        : state.roleName ? 'event_dom' : 'completed_accounts.json';
     if (membershipMatches(state, roleName, leaderContext)) {
         console.log(
             `[${email}] ${roleName} zaten doğru takımda; sunucu listesinden idempotent doğrulandı.`,
@@ -1650,6 +1713,12 @@ async function joinLeaderTeam(page, account, leaderContext) {
         if (cloudFrontInfo.blocked) {
             cloudFrontRecoveryCount += 1;
             if (attempt >= CONFIG.maxAttempts) {
+                const retryDelayMs = await waitAfterCloudFrontBlock(
+                    cloudFrontRecoveryCount,
+                    `[${email}] /agreeTeam isteği`,
+                    cloudFrontInfo,
+                    { sleep: false },
+                );
                 const error = new Error(
                     `[${email}] /agreeTeam CloudFront 403 nedeniyle ` +
                     `${CONFIG.maxAttempts} kontrollü denemede tamamlanamadı` +
@@ -1657,6 +1726,7 @@ async function joinLeaderTeam(page, account, leaderContext) {
                 );
                 error.preventRelogin = true;
                 error.cloudFrontBlocked = true;
+                error.retryAfterSeconds = Math.ceil(retryDelayMs / 1000);
                 throw error;
             }
 
@@ -1821,10 +1891,17 @@ async function launchAutomationBrowser() {
     return puppeteer.launch({
         executablePath,
         headless: CONFIG.headless,
-        defaultViewport: CONFIG.headless ? { width: 1366, height: 900 } : null,
+        defaultViewport: { width: 1366, height: 900 },
         args: CONFIG.headless
             ? ['--no-first-run', '--no-default-browser-check']
-            : ['--incognito', '--start-maximized', '--no-first-run', '--no-default-browser-check'],
+            : [
+                '--incognito',
+                '--start-minimized',
+                '--window-position=-32000,-32000',
+                '--window-size=1366,900',
+                '--no-first-run',
+                '--no-default-browser-check',
+            ],
     });
 }
 
@@ -1838,7 +1915,7 @@ async function processAccount(account, leaderContext, browser) {
         await login(loginPage, email);
 
         if (position === 1) {
-            if (!isLeader(index)) {
+            if (!account.positionAssignedByQueue && !isLeader(index)) {
                 throw new Error(`${index}. hesap 1. üye olduğu halde lider numarası kuralına uymuyor.`);
             }
             return {
@@ -2134,9 +2211,72 @@ function printExecutionPlan(executionPlan, selection) {
     }
 }
 
-async function main() {
-    const sourceData = loadVerifiedGroups();
-    const selection = await promptStartSelection(sourceData);
+function buildBatchSourceData(batch) {
+    if (!batch || !Number.isInteger(batch.sequence) || batch.sequence <= 0) {
+        throw new Error('Otonom grup paketinde pozitif sequence gereklidir.');
+    }
+    if (!Array.isArray(batch.accounts) || batch.accounts.length !== CONFIG.groupSize) {
+        throw new Error(`Otonom grup paketi tam olarak ${CONFIG.groupSize} hesap içermelidir.`);
+    }
+    const seenEmails = new Set();
+    const accounts = batch.accounts.map((rawAccount, offset) => {
+        const email = String(rawAccount.email || '').trim().toLowerCase();
+        const nickname = String(rawAccount.nickname || '').trim();
+        const index = Number(rawAccount.index);
+        if (!email || seenEmails.has(email) || !nickname || !Number.isSafeInteger(index) || index <= 0) {
+            throw new Error(`Otonom pakette geçersiz/tekrarlı hesap var: ${email || '(boş)'}`);
+        }
+        seenEmails.add(email);
+        return {
+            index,
+            email,
+            nickname,
+            completedAt: String(rawAccount.created_at || ''),
+            sourceVerification: { autonomous_pipeline: true, package_id: batch.id },
+            groupNumber: batch.sequence,
+            position: offset + 1,
+            positionAssignedByQueue: true,
+        };
+    });
+    const group = {
+        groupNumber: batch.sequence,
+        firstIndex: accounts[0].index,
+        lastIndex: accounts[accounts.length - 1].index,
+        accounts,
+    };
+    const serialized = JSON.stringify({ id: batch.id, sequence: batch.sequence, accounts });
+    return {
+        accounts,
+        completeGroups: [group],
+        incompleteGroups: [],
+        sourceHash: sha256(serialized),
+        sourceVersion: 1,
+        autonomousPackageId: batch.id,
+    };
+}
+
+function assertBatchGroupSlotAvailable(sourceData) {
+    if (!sourceData.autonomousPackageId || !fs.existsSync(CONFIRMED_GROUPS_PATH)) {
+        return;
+    }
+    const state = parseJson(fs.readFileSync(CONFIRMED_GROUPS_PATH, 'utf8'));
+    const group = sourceData.completeGroups[0];
+    const previous = state && state.groups && state.groups[String(group.groupNumber)];
+    if (!previous || !Array.isArray(previous.accounts)) {
+        return;
+    }
+    const previousEmails = previous.accounts.map((account) => String(account.email).toLowerCase());
+    const requestedEmails = group.accounts.map((account) => account.email);
+    if (JSON.stringify(previousEmails) !== JSON.stringify(requestedEmails)) {
+        throw new Error(
+            `${group.groupNumber}. grup numarası onaylanmis_gruplar.json içinde başka hesaplara ait. ` +
+            'Durum dosyaları elle birleştirilmeden otomasyon devam etmeyecek.',
+        );
+    }
+}
+
+async function runGrouping(sourceData, selection) {
+    assertBatchGroupSlotAvailable(sourceData);
     const executionPlan = buildExecutionPlan(sourceData, selection);
     printExecutionPlan(executionPlan, selection);
 
@@ -2266,6 +2406,20 @@ async function main() {
     }
 }
 
+async function runGroupingBatch(batch) {
+    const sourceData = buildBatchSourceData(batch);
+    return runGrouping(sourceData, {
+        groupNumber: batch.sequence,
+        memberPosition: 1,
+    });
+}
+
+async function main() {
+    const sourceData = loadVerifiedGroups();
+    const selection = await promptStartSelection(sourceData);
+    return runGrouping(sourceData, selection);
+}
+
 if (require.main === module) {
     main().catch((error) => {
         console.error(`\nGruplama durduruldu: ${error.message}`);
@@ -2275,6 +2429,7 @@ if (require.main === module) {
 
 module.exports = {
     buildLeaderLink,
+    buildBatchSourceData,
     buildExecutionPlan,
     isLeader,
     isCloudFrontSignature,
@@ -2283,5 +2438,6 @@ module.exports = {
     loadVerifiedGroups,
     normalizedRoleName,
     persistConfirmedGroupState,
+    runGroupingBatch,
     selectMemberRegistrationRole,
 };

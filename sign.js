@@ -1,102 +1,623 @@
+'use strict';
 
-/*
-efegemen 1-200
-*/
-
-
-/*
-https://novoevento78-lobr.oasgames.com/activity
-https://newserver79-lotr.oasgames.com/activity
-*/
+const fs = require('node:fs');
+const path = require('node:path');
+const readline = require('node:readline/promises');
 const puppeteer = require('puppeteer');
+const {
+    computeRateLimitBackoffMs,
+    networkCooldownDelay,
+    penalizeNetworkScope,
+    reserveNetworkSlot,
+} = require('./pipeline/core');
+const { passwordForEmail } = require('./pipeline/credentials');
 
-(async () => {
-    const emailFirstPlace = 'efegemen';
-    const emailType = 'outlook.com';
-    const numberOfAccount = 200;
-    const password = '123321';
-    const baslangicSayisi = 1;
-    const eventUrl = 'https://newserver79-lotr.oasgames.com/activity';
-    const signUrl = 'https://newserver79-lotr.oasgames.com/sign';
-    const timeout = 30000; // 30 saniye
+const BASE_DIR = __dirname;
+const ONAYLANMIS_GRUPLAR_PATH = path.join(BASE_DIR, 'onaylanmis_gruplar.json');
+// grupla.js ve çalışan bölgesel sign akışları da bu klasik OAS giriş
+// uç noktasını kullanıyor. newucenter uç noktası CloudFront tarafından 403
+// ile reddedildiği için burada farklı bir giriş rotası kullanılmamalı.
+const LOGIN_URL = 'https://www.oasgames.com/?a=ucenter&m=login';
+const ACTIVITY_URL = 'https://newserver79-lotr.oasgames.com/activity';
+const SIGN_URL = 'https://newserver79-lotr.oasgames.com/sign';
 
-    async function processAccount(email, password, emailFirstPlace, i) {
-        const loginUrl = 'https://www.oasgames.com/?a=ucenter&m=login';
+function positiveInteger(name, fallback, minimum = 1) {
+    const raw = process.env[name];
+    if (raw == null || raw === '') {
+        return fallback;
+    }
+    const value = Number.parseInt(raw, 10);
+    if (!Number.isInteger(value) || value <= 0) {
+        throw new Error(`${name} pozitif tam sayı olmalıdır.`);
+    }
+    return Math.max(value, minimum);
+}
 
-        const browser = await puppeteer.launch({ headless: true });
-        const page = await browser.newPage();
+const CONFIG = Object.freeze({
+    headless: process.env.LEGEND_SIGN_HEADLESS === 'true',
+    navigationTimeoutMs: positiveInteger('LEGEND_SIGN_NAVIGATION_TIMEOUT_MS', 45000),
+    actionTimeoutMs: positiveInteger('LEGEND_SIGN_ACTION_TIMEOUT_MS', 30000),
+    sessionTimeoutMs: positiveInteger('LEGEND_SIGN_SESSION_TIMEOUT_MS', 15000),
+    navigationIntervalMs: positiveInteger('LEGEND_NAVIGATION_INTERVAL_MS', 15000, 15000),
+    accountCooldownMs: positiveInteger('LEGEND_SIGN_ACCOUNT_COOLDOWN_MS', 15000, 15000),
+    // Etkinlik sunucusu geçerli aynı oturum için arka arkaya ERR901 döndürüp
+    // 6. istekte başarı verebiliyor. Her POST ortak 403 kapısından geçtiği için
+    // bu değeri 8 yapmak sunucuyu sıkıştırmadan bu tutarsızlığı tolere eder.
+    maxAttempts: positiveInteger('LEGEND_SIGN_MAX_ATTEMPTS', 8, 8),
+    retryDelayMs: positiveInteger('LEGEND_SIGN_RETRY_DELAY_MS', 15000, 15000),
+    verificationDelayMs: positiveInteger('LEGEND_SIGN_VERIFICATION_DELAY_MS', 15000, 15000),
+    cloudFrontBackoffMs: positiveInteger('LEGEND_CLOUDFRONT_BACKOFF_MS', 120000, 120000),
+    cloudFrontBackoffMaxMs: positiveInteger('LEGEND_CLOUDFRONT_BACKOFF_MAX_MS', 900000, 900000),
+    cloudFrontMaxAttempts: positiveInteger('LEGEND_CLOUDFRONT_MAX_ATTEMPTS', 3, 3),
+});
 
-        try {
-            // 1. Sayfayı aç
-            await page.goto(loginUrl, { waitUntil: 'networkidle2' });
+function sleep(milliseconds) {
+    return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
 
-            // 2. Email ve şifreyi gir
-            const isLoginSuccessful = await page.evaluate((email, password) => {
-                const emailElement = document.querySelector('#user_email');
-                const passwordElement = document.querySelector('#user_password');
+function findInstalledChrome() {
+    const candidates = [
+        process.env.LEGEND_CHROME_PATH,
+        path.join(process.env.PROGRAMFILES || 'C:\\Program Files', 'Google', 'Chrome', 'Application', 'chrome.exe'),
+        path.join(process.env['PROGRAMFILES(X86)'] || 'C:\\Program Files (x86)', 'Google', 'Chrome', 'Application', 'chrome.exe'),
+        process.env.LOCALAPPDATA
+            ? path.join(process.env.LOCALAPPDATA, 'Google', 'Chrome', 'Application', 'chrome.exe')
+            : null,
+    ].filter(Boolean);
+    return candidates.find((candidate) => fs.existsSync(candidate)) || null;
+}
 
-                if (emailElement && passwordElement) {
-                    emailElement.value = email;
-                    passwordElement.value = password;
-                    ajax_login(); // Login fonksiyonu çağırılıyor
-                    return true;
-                }
-                return false;
-            }, email, password);
+function isCloudFrontSignature(status, text) {
+    return status === 403 ||
+        /403\s+ERROR/i.test(text || '') ||
+        /request could not be satisfied/i.test(text || '') ||
+        /generated by cloudfront/i.test(text || '');
+}
 
-            if (!isLoginSuccessful) {
-                console.error('Login formundaki elementler bulunamadı!');
-                return;
-            }
+function retryAfterMilliseconds(response) {
+    if (!response) {
+        return 0;
+    }
+    const raw = response.headers()['retry-after'];
+    if (!raw) {
+        return 0;
+    }
+    const seconds = Number(raw);
+    if (Number.isFinite(seconds)) {
+        return Math.max(0, seconds * 1000);
+    }
+    const date = Date.parse(raw);
+    return Number.isFinite(date) ? Math.max(0, date - Date.now()) : 0;
+}
 
-            // Sayfanın yönlendirilmesini bekle
-            await page.waitForNavigation({ waitUntil: 'networkidle0' });
+async function pageText(page) {
+    return page.evaluate(() => String(document.body ? document.body.innerText : '').slice(0, 5000))
+        .catch(() => '');
+}
 
-            // Davet linkinin alındığı sayfaya git
-            await page.goto(eventUrl, { waitUntil: 'networkidle0' });
+async function waitForNetworkTurn(url, label) {
+    const cooldownDelay = await networkCooldownDelay('sign');
+    if (cooldownDelay > 0) {
+        console.log(
+            `[${label}] BOT 3 403 soğuması: ${Math.ceil(cooldownDelay / 1000)} sn bekleniyor.`,
+        );
+        await sleep(cooldownDelay);
+    }
+    const gateDelay = await reserveNetworkSlot(url, CONFIG.navigationIntervalMs);
+    if (gateDelay > 0) {
+        console.log(
+            `[${label}] Ortak CloudFront sırası: ${Math.ceil(gateDelay / 1000)} sn bekleniyor ` +
+            `(istekler arası alt sınır ${Math.ceil(CONFIG.navigationIntervalMs / 1000)} sn).`,
+        );
+        await sleep(gateDelay);
+    }
+}
 
-            // Sign işlemi
-            let attemptCount = 0;
-            while (attemptCount < 5) {
-                await page.goto(signUrl, { waitUntil: 'networkidle0' });
-                attemptCount++;
-            }
-
-            console.log(`${emailFirstPlace}${i} için sign işlemleri tamamlandı.`);
-        } catch (error) {
-            console.error(`${emailFirstPlace}${i} için hata oluştu: ${error.message}`);
-        } finally {
-            await page.close();
-            await browser.close();
+async function gotoWithRecovery(page, url, options, label) {
+    let lastStatus = null;
+    let lastRetryDelayMs = CONFIG.cloudFrontBackoffMs;
+    for (let attempt = 1; attempt <= CONFIG.cloudFrontMaxAttempts; attempt += 1) {
+        await waitForNetworkTurn(url, label);
+        const response = await page.goto(url, options);
+        const text = await pageText(page);
+        lastStatus = response ? response.status() : null;
+        if (!isCloudFrontSignature(lastStatus, text)) {
+            return { response, text };
+        }
+        const delay = computeRateLimitBackoffMs(attempt, {
+            baseMs: CONFIG.cloudFrontBackoffMs,
+            maximumMs: CONFIG.cloudFrontBackoffMaxMs,
+            serverDelayMs: retryAfterMilliseconds(response),
+        });
+        lastRetryDelayMs = await penalizeNetworkScope(url, delay, undefined, {
+            worker: 'sign',
+            attempt,
+            http_status: lastStatus,
+        });
+        if (attempt < CONFIG.cloudFrontMaxAttempts) {
+            console.warn(
+                `[${label}] CloudFront 403 algılandı. Retry-After/backoff gereği ` +
+                `${Math.ceil(lastRetryDelayMs / 1000)} sn yalnız BOT 3 bekleyecek.`,
+            );
+            await sleep(lastRetryDelayMs);
         }
     }
+    const error = new Error(
+        `[${label}] CloudFront engeli ${CONFIG.cloudFrontMaxAttempts} kontrollü denemede kalkmadı ` +
+        `(son HTTP=${lastStatus || 'bilinmiyor'}).`,
+    );
+    error.isRateLimited = true;
+    error.retryAfterSeconds = Math.ceil(lastRetryDelayMs / 1000);
+    throw error;
+}
 
-    for (let i = baslangicSayisi; i < baslangicSayisi + numberOfAccount; i++) {
-        const email = `${emailFirstPlace}${i}@${emailType}`;
-        
-        let retry = true;
-        while (retry) {
-            retry = await Promise.race([
-                processAccount(email, password, emailFirstPlace, i),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout))
-            ])
-            .then(() => {
-                retry = false; // İşlem başarılı, yeniden deneme gerekmiyor
-            })
-            .catch((error) => {
-                if (error.message === 'Timeout') {
-                    console.log(`${emailFirstPlace}${i} için işlem zaman aşımına uğradı, yeniden denenecek.`);
-                    retry = true; // Yeniden dene
-                } else {
-                    retry = false; // Diğer hatalarda yeniden denemeye gerek yok
+function classifySignText(text) {
+    const value = String(text || '').trim();
+    let parsed = null;
+    try {
+        parsed = JSON.parse(value);
+    } catch (_notJson) {
+        // Düz metin yanıtlar da desteklenir.
+    }
+    const message = parsed && typeof parsed === 'object'
+        ? String(parsed.msg || parsed.message || parsed.error || parsed.exception || value)
+        : value;
+    const code = parsed && typeof parsed === 'object'
+        ? String(parsed.err_code || parsed.code || '')
+        : '';
+    const sessionInvalid = /ERR901/i.test(code) || /user\s+is\s+null/i.test(message);
+    const already = /zaten\s*(?:sign|imza)|already\s*(?:sign|signed)|duplicate|tekrar\s*imzala/i.test(message);
+    const explicitSuccess = Boolean(
+        parsed && typeof parsed === 'object' &&
+        (parsed.success === true || parsed.status === 1 || parsed.status === 'success' || parsed.code === 0),
+    );
+    const successText = /(?:sign|imza).*(?:başar|tamam)|(?:success|successful|imzalandı)/i.test(message);
+    const failure = /(?:fail|error|hata|başarısız|yetki yok|unauthorized)/i.test(message);
+    if (sessionInvalid) {
+        return { kind: 'session_invalid', code, message };
+    }
+    if (already) {
+        return { kind: 'already_signed', code, message };
+    }
+    if (explicitSuccess || (successText && !failure)) {
+        return { kind: 'signed', code, message };
+    }
+    if (failure) {
+        return { kind: 'failure', code, message };
+    }
+    return { kind: 'unknown', code, message };
+}
+
+async function login(page, email, password, cloudFrontAttempt = 1) {
+    console.log(`[${email}] Giriş başlatıldı.`);
+    await gotoWithRecovery(page, LOGIN_URL, {
+        waitUntil: 'networkidle2',
+        timeout: CONFIG.navigationTimeoutMs,
+    }, `${email} login`);
+    await page.waitForSelector('#user_email', { visible: true, timeout: CONFIG.actionTimeoutMs });
+    await page.click('#user_email', { clickCount: 3 });
+    await page.type('#user_email', email, { delay: 50 });
+    const fakePassword = await page.$('#fake_pass_01');
+    if (fakePassword) {
+        await fakePassword.click();
+    }
+    await page.waitForSelector('#user_password', { visible: true, timeout: CONFIG.actionTimeoutMs });
+    await page.click('#user_password', { clickCount: 3 });
+    await page.type('#user_password', password, { delay: 50 });
+    await waitForNetworkTurn(LOGIN_URL, `${email} login gönderimi`);
+    let cloudFrontResponse = null;
+    let loginVerified = false;
+    const navigationPromise = page.waitForNavigation({
+        waitUntil: 'networkidle2',
+        timeout: CONFIG.navigationTimeoutMs,
+    }).catch(() => null);
+    const observeResponse = (response) => {
+        if (response.status() !== 403) {
+            return;
+        }
+        try {
+            const hostname = new URL(response.url()).hostname.toLowerCase();
+            if (hostname === 'oasgames.com' || hostname.endsWith('.oasgames.com')) {
+                cloudFrontResponse = response;
+            }
+        } catch (_invalidResponseUrl) {
+            // Geçersiz URL giriş doğrulamasını etkilemez.
+        }
+    };
+    page.on('response', observeResponse);
+    try {
+        const button = await page.$('.login_btn');
+        if (button) {
+            await button.click();
+        } else {
+            await page.evaluate(() => {
+                if (typeof ajax_login === 'function') {
+                    ajax_login();
                 }
             });
         }
-
-        // 3 saniye bekle
-        console.log('3 saniye bekleniyor...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        const deadline = Date.now() + CONFIG.navigationTimeoutMs;
+        while (Date.now() < deadline) {
+            const cookies = await page.cookies().catch(() => []);
+            if (cookies.some((cookie) => cookie.name === 'oas_user' && cookie.value)) {
+                loginVerified = true;
+                break;
+            }
+            if (cloudFrontResponse) {
+                break;
+            }
+            await sleep(500);
+        }
+    } finally {
+        page.off('response', observeResponse);
+    }
+    if (loginVerified) {
+        const completedNavigation = await navigationPromise;
+        if (!completedNavigation) {
+            await page.waitForNetworkIdle({
+                idleTime: 750,
+                timeout: CONFIG.actionTimeoutMs,
+            }).catch(() => {});
+        }
+        console.log(`[${email}] Giriş doğrulandı.`);
+        return;
     }
 
-    console.log('Tüm kullanıcı işlemleri tamamlandı.');
-})();
+    const text = await pageText(page);
+    const cloudFrontStatus = cloudFrontResponse ? cloudFrontResponse.status() : null;
+    if (isCloudFrontSignature(cloudFrontStatus, text)) {
+        const requestedDelay = computeRateLimitBackoffMs(cloudFrontAttempt, {
+            baseMs: CONFIG.cloudFrontBackoffMs,
+            maximumMs: CONFIG.cloudFrontBackoffMaxMs,
+            serverDelayMs: retryAfterMilliseconds(cloudFrontResponse),
+        });
+        const retryDelayMs = await penalizeNetworkScope(LOGIN_URL, requestedDelay, undefined, {
+            worker: 'sign',
+            attempt: cloudFrontAttempt,
+            http_status: cloudFrontStatus || 403,
+        });
+        if (cloudFrontAttempt < CONFIG.cloudFrontMaxAttempts) {
+            console.warn(
+                `[${email} login gönderimi] CloudFront 403 algılandı; ` +
+                `${Math.ceil(retryDelayMs / 1000)} sn yalnız BOT 3 bekleyecek.`,
+            );
+            await sleep(retryDelayMs);
+            return login(page, email, password, cloudFrontAttempt + 1);
+        }
+        const error = new Error(
+            `${email}: login gönderimi CloudFront 403 nedeniyle ` +
+            `${CONFIG.cloudFrontMaxAttempts} kontrollü denemede tamamlanamadı.`,
+        );
+        error.isRateLimited = true;
+        error.retryAfterSeconds = Math.ceil(retryDelayMs / 1000);
+        throw error;
+    }
+    throw new Error(`${email}: oas_user oturum çerezi oluşmadı.`);
+}
+
+async function readEventSession(page) {
+    return page.evaluate(() => ({
+        userId: String(window.user_id || '').trim(),
+        um: String(window.um || '').trim(),
+        ud: String(window.ud || '').trim(),
+        sid: String(window.sid || '').trim(),
+        loginRequired: Boolean(document.querySelector('.login_in_btn, .login_btn')),
+    }));
+}
+
+async function openVerifiedEventSession(page, email) {
+    await gotoWithRecovery(page, ACTIVITY_URL, {
+        waitUntil: 'networkidle2',
+        timeout: CONFIG.navigationTimeoutMs,
+    }, `${email} activity`);
+    await page.waitForFunction(
+        () => Boolean(String(window.user_id || '').trim()) &&
+            Boolean(String(window.um || '').trim()),
+        { timeout: CONFIG.sessionTimeoutMs },
+    ).catch(() => null);
+    const session = await readEventSession(page);
+    if (!session.userId || !session.um || session.loginRequired) {
+        const error = new Error(
+            `${email}: etkinlik sunucusunda oyuncu oturumu oluşmadı ` +
+            `(user_id=${session.userId ? 'var' : 'yok'}, um=${session.um ? 'var' : 'yok'}).`,
+        );
+        error.isSessionInvalid = true;
+        throw error;
+    }
+    console.log(`[${email}] Etkinlik oyuncu oturumu doğrulandı.`);
+    return session;
+}
+
+async function postSignWithRecovery(page, email, session) {
+    let lastRetryDelayMs = CONFIG.cloudFrontBackoffMs;
+    for (let attempt = 1; attempt <= CONFIG.cloudFrontMaxAttempts; attempt += 1) {
+        await waitForNetworkTurn(SIGN_URL, `${email} sign POST`);
+        const responsePromise = page.waitForResponse(
+            (response) => {
+                try {
+                    const url = new URL(response.url());
+                    return url.pathname === '/sign' && response.request().method() === 'POST';
+                } catch (_invalidUrl) {
+                    return false;
+                }
+            },
+            { timeout: CONFIG.actionTimeoutMs },
+        );
+        const pageResultPromise = page.evaluate(async ({ userId, um }) => {
+            const body = new URLSearchParams({ user_id: userId, um }).toString();
+            const response = await fetch('/sign', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body,
+            });
+            return {
+                status: response.status,
+                text: await response.text(),
+            };
+        }, { userId: session.userId, um: session.um });
+
+        const [response, pageResult] = await Promise.all([responsePromise, pageResultPromise]);
+        const posted = new URLSearchParams(response.request().postData() || '');
+        if (posted.get('user_id') !== session.userId || posted.get('um') !== session.um) {
+            throw new Error(`${email}: /sign POST oturum alanları beklenen değerlerle eşleşmedi.`);
+        }
+        const text = String(pageResult.text || '').trim();
+        if (!isCloudFrontSignature(pageResult.status, text)) {
+            return { response, status: pageResult.status, text };
+        }
+
+        const delay = computeRateLimitBackoffMs(attempt, {
+            baseMs: CONFIG.cloudFrontBackoffMs,
+            maximumMs: CONFIG.cloudFrontBackoffMaxMs,
+            serverDelayMs: retryAfterMilliseconds(response),
+        });
+        lastRetryDelayMs = await penalizeNetworkScope(SIGN_URL, delay, undefined, {
+            worker: 'sign',
+            attempt,
+            http_status: pageResult.status,
+        });
+        if (attempt < CONFIG.cloudFrontMaxAttempts) {
+            console.warn(
+                `[${email} sign POST] CloudFront 403 algılandı; ` +
+                `${Math.ceil(lastRetryDelayMs / 1000)} sn yalnız BOT 3 bekleyecek.`,
+            );
+            await sleep(lastRetryDelayMs);
+        }
+    }
+    const error = new Error(
+        `${email}: sign POST isteği CloudFront engeli nedeniyle tamamlanamadı.`,
+    );
+    error.isRateLimited = true;
+    error.retryAfterSeconds = Math.ceil(lastRetryDelayMs / 1000);
+    throw error;
+}
+
+async function confirmSign(page, email) {
+    const session = await openVerifiedEventSession(page, email);
+
+    for (let attempt = 1; attempt <= CONFIG.maxAttempts; attempt += 1) {
+        const result = await postSignWithRecovery(page, email, session);
+        const classification = classifySignText(result.text);
+        const responseSummary = String(classification.message || '')
+            .replace(/\s+/g, ' ')
+            .slice(0, 240);
+        console.log(
+            `[${email}] Sign doğrulama ${attempt}/${CONFIG.maxAttempts}: ` +
+            `${classification.kind}${classification.code ? ` (${classification.code})` : ''}` +
+            `${responseSummary ? ` | ${responseSummary}` : ''}`,
+        );
+        if (classification.kind === 'signed' || classification.kind === 'already_signed') {
+            return {
+                email,
+                first: classification.kind,
+                second: 'authoritative_server_response',
+                verified_at: new Date().toISOString(),
+            };
+        }
+        if (classification.kind === 'session_invalid' && attempt >= CONFIG.maxAttempts) {
+            const error = new Error(
+                `${email}: sign sunucusu oyuncu oturumunu kaybetti ` +
+                `(${classification.code || classification.message}).`,
+            );
+            error.isSessionInvalid = true;
+            throw error;
+        }
+        if (classification.kind === 'session_invalid') {
+            console.warn(
+                `[${email}] Geçici ${classification.code || 'oturum'} yanıtı; ` +
+                `aynı doğrulanmış oturumda 403 güvenli aralıkla yeniden denenecek.`,
+            );
+        }
+        if (classification.kind === 'failure') {
+            throw new Error(
+                `${email}: sign sunucusu işlemi reddetti ` +
+                `(${classification.code || classification.message}).`,
+            );
+        }
+        // Ayrıca sabit sleep uygulama: postSignWithRecovery içindeki ortak ağ
+        // kapısı zaten iki gerçek POST arasında güvenli minimum aralığı
+        // garanti eder. Buradaki ikinci bekleme aynı korumayı iki kez uyguluyordu.
+    }
+    throw new Error(`${email}: sign sonucu ${CONFIG.maxAttempts} denemede doğrulanamadı.`);
+}
+
+async function launchBrowser() {
+    const executablePath = findInstalledChrome();
+    if (!executablePath) {
+        throw new Error('Google Chrome bulunamadı; LEGEND_CHROME_PATH ayarlanabilir.');
+    }
+    return puppeteer.launch({
+        executablePath,
+        headless: CONFIG.headless,
+        defaultViewport: { width: 1366, height: 900 },
+        args: CONFIG.headless
+            ? ['--no-first-run', '--no-default-browser-check']
+            : [
+                '--incognito',
+                '--start-minimized',
+                '--window-position=-32000,-32000',
+                '--window-size=1366,900',
+                '--no-first-run',
+                '--no-default-browser-check',
+            ],
+    });
+}
+
+async function processAccountWithBrowser(browser, account, password) {
+    const email = String(account.email || '').trim().toLowerCase();
+    if (!email || !password) {
+        throw new Error('Sign işlemi için e-posta ve parola gereklidir.');
+    }
+    let lastError = null;
+    for (let sessionAttempt = 1; sessionAttempt <= 2; sessionAttempt += 1) {
+        const context = await browser.createBrowserContext();
+        try {
+            const page = await context.newPage();
+            page.setDefaultTimeout(CONFIG.actionTimeoutMs);
+            page.setDefaultNavigationTimeout(CONFIG.navigationTimeoutMs);
+            page.on('dialog', (dialog) => dialog.accept().catch(() => {}));
+            await login(page, email, password);
+            return await confirmSign(page, email);
+        } catch (error) {
+            lastError = error;
+            if (!error.isSessionInvalid || sessionAttempt >= 2) {
+                throw error;
+            }
+            console.warn(
+                `[${email}] Oyuncu oturumu kurulamadı; aynı hesabın temiz oturumla ` +
+                `son kontrollü giriş denemesi yapılacak.`,
+            );
+        } finally {
+            await context.close().catch(() => {});
+        }
+        await sleep(CONFIG.accountCooldownMs);
+    }
+    throw lastError || new Error(`${email}: oyuncu oturumu kurulamadı.`);
+}
+
+async function processAccount(email, password, infoText = '') {
+    const browser = await launchBrowser();
+    try {
+        if (infoText) {
+            console.log(`[${email}] ${infoText}`);
+        }
+        return await processAccountWithBrowser(browser, { email }, passwordForEmail(email, password));
+    } finally {
+        await browser.close().catch(() => {});
+    }
+}
+
+function validatePackage(packageEntry) {
+    if (!packageEntry || !Array.isArray(packageEntry.accounts) || packageEntry.accounts.length !== 4) {
+        throw new Error('Sign paketi tam olarak 4 hesap içermelidir.');
+    }
+    const emails = packageEntry.accounts.map((account) => String(account.email || '').trim().toLowerCase());
+    if (emails.some((email) => !email) || new Set(emails).size !== 4) {
+        throw new Error('Sign paketindeki dört e-posta dolu ve benzersiz olmalıdır.');
+    }
+    return emails;
+}
+
+async function runSignPackage(packageEntry, options = {}) {
+    const emails = validatePackage(packageEntry);
+    const skip = new Set((options.skipEmails || []).map((email) => String(email).toLowerCase()));
+    const browser = await launchBrowser();
+    const results = [];
+    try {
+        for (let index = 0; index < packageEntry.accounts.length; index += 1) {
+            const account = packageEntry.accounts[index];
+            const email = emails[index];
+            if (skip.has(email)) {
+                console.log(`[${email}] Kalıcı kayıtta sign tamam; atlandı.`);
+                results.push({ email, skipped: true });
+                continue;
+            }
+            console.log(`[${packageEntry.id || 'paket'}] Sign ${index + 1}/4: ${email}`);
+            const result = await processAccountWithBrowser(
+                browser,
+                account,
+                passwordForEmail(email, options.password),
+            );
+            results.push(result);
+            if (options.onAccountSigned) {
+                await options.onAccountSigned(email, result);
+            }
+            if (index < packageEntry.accounts.length - 1) {
+                console.log(`[${email}] Sonraki hesap için ${Math.ceil(CONFIG.accountCooldownMs / 1000)} sn bekleniyor.`);
+                await sleep(CONFIG.accountCooldownMs);
+            }
+        }
+        return results;
+    } finally {
+        await browser.close().catch(() => {});
+    }
+}
+
+function loadGroupedAccounts() {
+    if (!fs.existsSync(ONAYLANMIS_GRUPLAR_PATH)) {
+        return [];
+    }
+    const data = JSON.parse(fs.readFileSync(ONAYLANMIS_GRUPLAR_PATH, 'utf8'));
+    if (!data || !data.groups || typeof data.groups !== 'object') {
+        throw new Error('onaylanmis_gruplar.json biçimi geçersiz.');
+    }
+    return Object.entries(data.groups)
+        .filter(([, group]) => group && group.status === 'confirmed' && Array.isArray(group.accounts))
+        .map(([key, group]) => ({
+            id: `manual-group-${key}`,
+            sequence: Number.parseInt(key, 10),
+            accounts: [...group.accounts]
+                .sort((left, right) => left.position - right.position)
+                .map((account) => ({
+                    email: account.email,
+                    index: account.account_index,
+                    position: account.position,
+                })),
+        }))
+        .filter((group) => group.accounts.length === 4)
+        .sort((left, right) => left.sequence - right.sequence);
+}
+
+async function main() {
+    const groups = loadGroupedAccounts();
+    if (!groups.length) {
+        throw new Error('Sign için kesin onaylı dört hesaplı grup bulunamadı.');
+    }
+    const terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
+    try {
+        const answer = await terminal.question(
+            `Sign yapılacak grup (${groups.map((group) => group.sequence).join(', ')}): `,
+        );
+        const sequence = Number.parseInt(answer, 10);
+        const group = groups.find((candidate) => candidate.sequence === sequence);
+        if (!group) {
+            throw new Error('Geçerli bir grup seçilmedi.');
+        }
+        await runSignPackage(group);
+        console.log(`${group.sequence}. grup sign işlemi dört hesapla tamamlandı.`);
+    } finally {
+        terminal.close();
+    }
+}
+
+if (require.main === module) {
+    main().catch((error) => {
+        console.error(`Sign otomasyonu durdu: ${error.message}`);
+        process.exitCode = 1;
+    });
+}
+
+module.exports = {
+    LOGIN_URL,
+    classifySignText,
+    findInstalledChrome,
+    isCloudFrontSignature,
+    loadGroupedAccounts,
+    processAccount,
+    runSignPackage,
+    validatePackage,
+};

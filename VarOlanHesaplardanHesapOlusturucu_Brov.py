@@ -15,6 +15,7 @@ import time
 import warnings
 from dataclasses import dataclass
 from datetime import datetime
+from functools import lru_cache
 from getpass import getpass
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -25,7 +26,7 @@ import numpy as np
 import pyautogui
 import pyperclip
 from PIL import Image
-from pywinauto import Application
+from pywinauto import Application, Desktop
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -37,6 +38,7 @@ WEB_PASSWORD_IMAGE = BASE_DIR / "web_password.png"
 WEB_LOGIN_IMAGE = BASE_DIR / "web_login_btn.png"
 CLIENT_ENTER_IMAGE = BASE_DIR / "giris1.png"
 CLIENT_DICE_IMAGE = BASE_DIR / "character_dice.png"
+CLIENT_GAME_READY_IMAGE = BASE_DIR / "game_ready_hemen_dene.png"
 PROGRESS_FILE = BASE_DIR / "completed_accounts.json"
 
 DEFAULT_EMAIL_PREFIX = "hadestxz"
@@ -48,6 +50,37 @@ DEFAULT_ACCOUNT_COUNT = 4
 # köşesine götürmek veya Ctrl+C kullanmak otomasyonu güvenli biçimde keser.
 pyautogui.FAILSAFE = True
 pyautogui.PAUSE = 0.08
+
+# Modül seviyesinde aktif pencereyi takip etmek için HWND
+CURRENT_BOT1_HWND: int | None = None
+
+
+def ensure_bot1_window_active_and_topmost() -> None:
+    """Bot 1'in penceresinin (Chrome giriş penceresi veya oyun istemcisi)
+    en üstte (Always on Top) ve aktif/odaklanmış olmasını sağlar.
+    """
+    global CURRENT_BOT1_HWND
+    if CURRENT_BOT1_HWND:
+        try:
+            user32 = ctypes.windll.user32
+            if user32.IsWindow(CURRENT_BOT1_HWND):
+                # HWND_TOPMOST = -1
+                # SWP_NOSIZE = 0x0001
+                # SWP_NOMOVE = 0x0002
+                # SWP_SHOWWINDOW = 0x0040
+                user32.SetWindowPos(CURRENT_BOT1_HWND, -1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040)
+
+                active_hwnd = user32.GetForegroundWindow()
+                if active_hwnd != CURRENT_BOT1_HWND:
+                    LOGGER.info("Bot 1 pencere odağı kaybedildi, tekrar odaklanılıyor (HWND: %s)...", CURRENT_BOT1_HWND)
+                    win = Application().connect(handle=CURRENT_BOT1_HWND).window(handle=CURRENT_BOT1_HWND)
+                    if win.is_minimized():
+                        win.restore()
+                        time.sleep(0.3)
+                    win.set_focus()
+                    time.sleep(0.3)
+        except Exception as exc:
+            LOGGER.debug("Pencereyi aktif ve topmost yapma hatası: %r", exc)
 
 
 class AutomationError(RuntimeError):
@@ -78,7 +111,8 @@ class ClientConfig:
     confidence: float = 0.65
     startup_wait: float = 6.0
     character_wait: float = 3.0
-    blue_bar_timeout: float = 35.0
+    game_entry_timeout: float = 90.0
+    game_ready_confidence: float = 0.72
     post_verification_wait: float = 0.75
 
     # Legend Online penceresi içindeki sabit oranlar. Mutlak ekran koordinatı
@@ -86,6 +120,73 @@ class ClientConfig:
     email_position: tuple[float, float] = (0.583, 0.647)
     password_position: tuple[float, float] = (0.585, 0.728)
     login_position: tuple[float, float] = (0.865, 0.661)
+
+
+@dataclass(frozen=True)
+class GameWindowCandidate:
+    region: tuple[int, int, int, int]
+    process_id: int | None
+    title: str
+
+
+@dataclass(frozen=True)
+class GameEntryEvidence:
+    method: str
+    process_id: int | None
+    location: Any
+
+
+PROTECTED_AUTOMATION_PROCESS_NAMES = frozenset(
+    {
+        "chrome.exe",
+        "msedge.exe",
+        "node.exe",
+        "powershell.exe",
+        "pwsh.exe",
+        "cmd.exe",
+        "windowsterminal.exe",
+        "codex.exe",
+    }
+)
+
+
+def _is_protected_automation_process_name(process_path: str) -> bool:
+    """Bot 1'in başka botların tarayıcı/terminal süreçlerini oyun sanmasını engeller."""
+    return Path(str(process_path or "")).name.casefold() in PROTECTED_AUTOMATION_PROCESS_NAMES
+
+
+def _process_image_path(process_id: int) -> str:
+    if sys.platform != "win32" or process_id <= 0:
+        return ""
+    process_query_limited_information = 0x1000
+    handle = ctypes.windll.kernel32.OpenProcess(
+        process_query_limited_information,
+        False,
+        process_id,
+    )
+    if not handle:
+        return ""
+    try:
+        capacity = 32768
+        buffer = ctypes.create_unicode_buffer(capacity)
+        size = ctypes.c_ulong(capacity)
+        if not ctypes.windll.kernel32.QueryFullProcessImageNameW(
+            handle,
+            0,
+            buffer,
+            ctypes.byref(size),
+        ):
+            return ""
+        return buffer.value
+    finally:
+        ctypes.windll.kernel32.CloseHandle(handle)
+
+
+def _is_protected_automation_process_id(process_id: int | None) -> bool:
+    return bool(
+        process_id and
+        _is_protected_automation_process_name(_process_image_path(process_id))
+    )
 
 
 class ProgressStore:
@@ -183,22 +284,32 @@ class ProgressStore:
         self._persist()
         LOGGER.info("Karakter gönderimi doğrulama bekliyor: %s | karakter=%s", email, nickname)
 
-    def mark_completed(self, email: str, nickname: str) -> None:
+    def mark_completed(
+        self,
+        email: str,
+        nickname: str,
+        verification_method: str = "two_blue_loading_bars",
+    ) -> None:
         normalized_email = email.strip().lower()
+        if verification_method not in {"two_blue_loading_bars", "game_ready_screen"}:
+            raise AutomationError(f"Bilinmeyen hesap doğrulama yöntemi: {verification_method}")
         self.accounts[normalized_email] = {
             "nickname": nickname,
             "completed_at": datetime.now().astimezone().isoformat(timespec="seconds"),
             "verification": {
                 "email_progress_key": normalized_email,
-                "two_blue_loading_bars": True,
+                "method": verification_method,
+                "two_blue_loading_bars": verification_method == "two_blue_loading_bars",
+                "game_ready_screen": verification_method == "game_ready_screen",
             },
         }
         self.pending_verification.pop(normalized_email, None)
         self.failed_attempts.pop(normalized_email, None)
         self._persist()
         LOGGER.info(
-            "Hesap çift doğrulamayla tamamlandı: %s | e-posta=OK | iki_mavi_bar=OK",
+            "Hesap doğrulamayla tamamlandı: %s | e-posta=OK | kanıt=%s",
             email,
+            verification_method,
         )
 
     def mark_manually_verified(self, email: str, nickname: str) -> None:
@@ -276,7 +387,7 @@ def _registry_app_path(executable: str) -> Path | None:
         for view in views:
             try:
                 with winreg.OpenKey(root, key_name, 0, winreg.KEY_READ | view) as key:
-                    value, _ = winreg.QueryValueEx(key, None)
+                    value, _ = winreg.QueryValueEx(key, "")
                     candidate = Path(os.path.expandvars(str(value))).expanduser()
                     if candidate.is_file():
                         return candidate.resolve()
@@ -364,6 +475,7 @@ def preflight(
         WEB_LOGIN_IMAGE,
         CLIENT_ENTER_IMAGE,
         CLIENT_DICE_IMAGE,
+        CLIENT_GAME_READY_IMAGE,
     ):
         _validate_image(image_path)
 
@@ -423,6 +535,7 @@ def _click_location(
     y_offset: int = 0,
     clicks: int = 1,
 ) -> tuple[int, int]:
+    ensure_bot1_window_active_and_topmost()
     center = pyautogui.center(location)
     x = int(center.x + x_offset)
     y = int(center.y + y_offset)
@@ -432,6 +545,7 @@ def _click_location(
 
 def _paste_into_focused_field(value: str, *, secret: bool = False) -> None:
     """Klavye düzeninden bağımsız yapıştırır ve parolayı panoda bırakmaz."""
+    ensure_bot1_window_active_and_topmost()
     previous_clipboard: str | None = None
     try:
         previous_clipboard = pyperclip.paste()
@@ -482,6 +596,7 @@ def _type_verified_nickname(
             cv2.COLOR_RGB2GRAY,
         )
 
+        ensure_bot1_window_active_and_topmost()
         pyautogui.moveTo(field_x, field_y, duration=0.2)
         pyautogui.click(field_x, field_y)
         time.sleep(0.35)
@@ -552,6 +667,12 @@ def _focus_window_for_pid(pid: int) -> bool:
         return False
 
     hwnd = handles[0]
+    global CURRENT_BOT1_HWND
+    CURRENT_BOT1_HWND = hwnd
+    try:
+        user32.SetWindowPos(hwnd, -1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040)
+    except Exception:
+        pass
     user32.ShowWindow(hwnd, 9)  # SW_RESTORE
     focused = bool(user32.SetForegroundWindow(hwnd))
     time.sleep(0.25)
@@ -807,7 +928,11 @@ def _locate_image_multiscale(
             result = cv2.matchTemplate(screenshot, scaled, cv2.TM_CCOEFF_NORMED)
             _, score, _, location = cv2.minMaxLoc(result)
             if best_result is None or score > best_result[0]:
-                best_result = (score, location, (template_width, template_height))
+                best_result = (
+                    float(score),
+                    (int(location[0]), int(location[1])),
+                    (int(template_width), int(template_height)),
+                )
 
         if best_result is not None:
             score, location, size = best_result
@@ -852,6 +977,13 @@ def _get_client_window(app: Application, timeout: float = 20.0) -> Any:
                     if rectangle.width() < 800 or rectangle.height() < 550:
                         continue
                     window.set_focus()
+                    global CURRENT_BOT1_HWND
+                    CURRENT_BOT1_HWND = window.handle
+                    try:
+                        ctypes.windll.user32.SetWindowPos(window.handle, -1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040)
+                        LOGGER.info("Legend Online penceresi en üste sabitlendi (Always on Top).")
+                    except Exception as topmost_exc:
+                        LOGGER.warning("Pencereyi en üste getirme başarısız oldu: %r", topmost_exc)
                     time.sleep(0.25)
                     return window
                 except Exception as exc:
@@ -871,6 +1003,7 @@ def _click_client_position(
     *,
     clicks: int = 1,
 ) -> tuple[int, int]:
+    ensure_bot1_window_active_and_topmost()
     rectangle = window.rectangle()
     x = round(rectangle.left + rectangle.width() * position[0])
     y = round(rectangle.top + rectangle.height() * position[1])
@@ -890,6 +1023,141 @@ def _client_region(window: Any) -> tuple[int, int, int, int]:
     return left, top, right - left, bottom - top
 
 
+def _window_candidate(window: Any, *, require_legend_title: bool) -> GameWindowCandidate | None:
+    try:
+        if not window.is_visible():
+            return None
+        title = str(window.window_text() or "").strip()
+        if require_legend_title and "legend online" not in title.lower():
+            return None
+        rectangle = window.rectangle()
+        screen = pyautogui.size()
+        left = max(0, int(rectangle.left))
+        top = max(0, int(rectangle.top))
+        right = min(screen.width, int(rectangle.right))
+        bottom = min(screen.height, int(rectangle.bottom))
+        width = right - left
+        height = bottom - top
+        if width < 600 or height < 400:
+            return None
+        try:
+            process_id = int(window.process_id())
+        except Exception:
+            process_id = None
+        if _is_protected_automation_process_id(process_id):
+            return None
+        return GameWindowCandidate((left, top, width, height), process_id, title)
+    except Exception:
+        return None
+
+
+def _candidate_game_windows(app: Application) -> list[GameWindowCandidate]:
+    """Launcher kapansa bile yeni oyun penceresini masaüstünden yeniden bulur."""
+    candidates: list[GameWindowCandidate] = []
+    try:
+        for window in app.windows():
+            candidate = _window_candidate(window, require_legend_title=False)
+            if candidate is not None:
+                candidates.append(candidate)
+    except Exception:
+        pass
+
+    desktop = Desktop(backend="win32")
+    try:
+        for window in desktop.windows():
+            candidate = _window_candidate(window, require_legend_title=True)
+            if candidate is not None:
+                candidates.append(candidate)
+    except Exception:
+        pass
+
+    # Yeni oyun penceresi farklı bir süreç ve başlıksız bir Flash kabı olabilir.
+    # Otomasyon istemciyi odakta tuttuğundan büyük etkin pencere güvenli yedektir;
+    # başarı yine yalnızca mavi bar veya özgün Hemen Dene şablonuyla verilir.
+    try:
+        active_window = desktop.get_active()
+        candidate = _window_candidate(active_window, require_legend_title=False)
+        excluded_active_titles = (
+            "chatgpt",
+            "codex",
+            "windows powershell",
+            "command prompt",
+            "windows terminal",
+            "legendbots",
+            "antigravity",
+            "google chrome",
+        )
+        if candidate is not None and not any(
+            value in candidate.title.lower() for value in excluded_active_titles
+        ):
+            candidates.append(candidate)
+    except Exception:
+        pass
+
+    unique: list[GameWindowCandidate] = []
+    seen: set[tuple[tuple[int, int, int, int], int | None]] = set()
+    for candidate in candidates:
+        key = (candidate.region, candidate.process_id)
+        if key not in seen:
+            seen.add(key)
+            unique.append(candidate)
+    return unique
+
+
+@lru_cache(maxsize=1)
+def _game_ready_templates() -> tuple[np.ndarray, ...]:
+    """Kullanıcının verdiği ekrandan yalnızca özgün Hemen Dene alanını hazırlar."""
+    _validate_image(CLIENT_GAME_READY_IMAGE)
+    source = cv2.imread(str(CLIENT_GAME_READY_IMAGE), cv2.IMREAD_COLOR)
+    if source is None:
+        raise AutomationError(f"Oyun hazır görseli OpenCV ile okunamadı: {CLIENT_GAME_READY_IMAGE}")
+    height, width = source.shape[:2]
+    template = source[
+        round(height * 0.68) : height,
+        round(width * 0.28) : round(width * 0.82),
+    ]
+    return tuple(
+        cv2.resize(
+            template,
+            None,
+            fx=scale,
+            fy=scale,
+            interpolation=cv2.INTER_CUBIC if scale > 1 else cv2.INTER_AREA,
+        )
+        for scale in (value / 100 for value in range(70, 151, 5))
+    )
+
+
+def _detect_game_ready_screen(
+    screenshot: Image.Image,
+    *,
+    confidence: float,
+) -> tuple[tuple[int, int, int, int, float] | None, float]:
+    """Hemen Dene oyun içi ekranını çoklu ölçekte bulur."""
+    rgb = np.asarray(screenshot)
+    bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+    best_score = 0.0
+    best_match: tuple[int, int, int, int, float] | None = None
+    for template in _game_ready_templates():
+        template_height, template_width = template.shape[:2]
+        if template_height >= bgr.shape[0] or template_width >= bgr.shape[1]:
+            continue
+        result = cv2.matchTemplate(bgr, template, cv2.TM_CCOEFF_NORMED)
+        _, score, _, location = cv2.minMaxLoc(result)
+        if score > best_score:
+            best_score = float(score)
+            best_match = (
+                int(location[0]),
+                int(location[1]),
+                int(template_width),
+                int(template_height),
+                float(score),
+            )
+    if best_match is not None and best_score >= confidence:
+        return best_match, best_score
+    return None, best_score
+
+
 def _detect_two_blue_loading_bars(
     screenshot: Image.Image,
 ) -> tuple[tuple[int, int, int, int], tuple[int, int, int, int]] | None:
@@ -904,7 +1172,7 @@ def _detect_two_blue_loading_bars(
     mask = cv2.inRange(hsv, np.array([80, 90, 80]), np.array([115, 255, 255]))
     mask[: round(height * 0.68), :] = 0
 
-    component_count, _, stats, _ = cv2.connectedComponentsWithStats(mask, 8)
+    component_count, _, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
     candidates: list[tuple[int, int, int, int, int]] = []
     minimum_width = max(180, round(width * 0.24))
     for x, y, component_width, component_height, area in stats[1:component_count]:
@@ -939,42 +1207,115 @@ def _detect_two_blue_loading_bars(
     return None
 
 
-def _wait_for_two_blue_loading_bars(
+def _scan_game_entry_frame(
+    app: Application,
+    screenshot: Image.Image,
+    *,
+    game_ready_confidence: float,
+) -> tuple[
+    GameEntryEvidence | None,
+    GameEntryEvidence | None,
+    float,
+    list[GameWindowCandidate],
+]:
+    blue_evidence: GameEntryEvidence | None = None
+    game_ready_evidence: GameEntryEvidence | None = None
+    best_game_ready_score = 0.0
+    candidates = _candidate_game_windows(app)
+    for candidate in candidates:
+        left, top, width, height = candidate.region
+        cropped = screenshot.crop((left, top, left + width, top + height))
+        if blue_evidence is None:
+            pair = _detect_two_blue_loading_bars(cropped)
+            if pair is not None:
+                absolute_pair = tuple(
+                    (bar[0] + left, bar[1] + top, bar[2], bar[3]) for bar in pair
+                )
+                blue_evidence = GameEntryEvidence(
+                    "two_blue_loading_bars",
+                    candidate.process_id,
+                    absolute_pair,
+                )
+
+        match, score = _detect_game_ready_screen(
+            cropped,
+            confidence=game_ready_confidence,
+        )
+        best_game_ready_score = max(best_game_ready_score, score)
+        if game_ready_evidence is None and match is not None:
+            x, y, match_width, match_height, match_score = match
+            game_ready_evidence = GameEntryEvidence(
+                "game_ready_screen",
+                candidate.process_id,
+                (x + left, y + top, match_width, match_height, match_score),
+            )
+    return blue_evidence, game_ready_evidence, best_game_ready_score, candidates
+
+
+def _wait_for_game_entry_success(
     app: Application,
     *,
     timeout: float,
+    game_ready_confidence: float,
     required_consecutive_frames: int = 2,
-) -> tuple[tuple[int, int, int, int], tuple[int, int, int, int]]:
-    """İki barı art arda karelerde görmeden hesabı doğrulanmış saymaz."""
+) -> GameEntryEvidence:
+    """Mavi barı öncelikli, Hemen Dene ekranını yedek başarı kanıtı sayar."""
     deadline = time.monotonic() + timeout
-    consecutive = 0
-    last_pair: tuple[tuple[int, int, int, int], tuple[int, int, int, int]] | None = None
+    blue_frames = 0
+    game_ready_frames = 0
+    last_blue: GameEntryEvidence | None = None
+    last_game_ready: GameEntryEvidence | None = None
+    best_game_ready_score = 0.0
 
-    LOGGER.info("İki mavi yükleme çubuğu doğrulanıyor...")
+    LOGGER.info(
+        "Oyun girişi doğrulanıyor: mavi bar öncelikli; görünmezse Hemen Dene ekranı beklenecek..."
+    )
     while time.monotonic() < deadline:
-        window = _get_client_window(app, timeout=3.0)
-        region = _client_region(window)
-        screenshot = pyautogui.screenshot(region=region)
-        pair = _detect_two_blue_loading_bars(screenshot)
-        if pair is not None:
-            consecutive += 1
-            last_pair = pair
+        screenshot = pyautogui.screenshot()
+        blue, game_ready, score, _ = _scan_game_entry_frame(
+            app,
+            screenshot,
+            game_ready_confidence=game_ready_confidence,
+        )
+        best_game_ready_score = max(best_game_ready_score, score)
+        if blue is not None:
+            blue_frames += 1
+            last_blue = blue
             LOGGER.info(
                 "Mavi bar karesi doğrulandı %s/%s | üst=%s | alt=%s",
-                consecutive,
+                blue_frames,
                 required_consecutive_frames,
-                pair[0],
-                pair[1],
+                blue.location[0],
+                blue.location[1],
             )
-            if consecutive >= required_consecutive_frames:
-                return pair
+            if blue_frames >= required_consecutive_frames:
+                LOGGER.info("İki mavi bar kesin doğrulandı; oyun ekranı beklenmeden devam edilecek.")
+                return blue
         else:
-            consecutive = 0
+            blue_frames = 0
+
+        if game_ready is not None:
+            game_ready_frames += 1
+            last_game_ready = game_ready
+            LOGGER.info(
+                "Hemen Dene oyun ekranı doğrulandı %s/%s | güven=%.3f | konum=%s",
+                game_ready_frames,
+                required_consecutive_frames,
+                game_ready.location[4],
+                game_ready.location[:4],
+            )
+            if game_ready_frames >= required_consecutive_frames:
+                LOGGER.info("Hemen Dene ekranı kalıcı göründü; oyun girişi başarılı sayılacak.")
+                return game_ready
+        else:
+            game_ready_frames = 0
         time.sleep(0.5)
 
     raise AutomationError(
-        "İki mavi yükleme çubuğu süre içinde art arda doğrulanamadı "
-        f"(son eşleşme={last_pair})."
+        f"{timeout:.0f} saniye boyunca ne iki mavi bar ne de Hemen Dene oyun ekranı "
+        "art arda doğrulanabildi; başka ekran açık kaldığı için hesap yeniden denenecek "
+        f"(son_mavi={last_blue is not None}, son_oyun={last_game_ready is not None}, "
+        f"en_iyi_oyun_eşleşmesi={best_game_ready_score:.3f})."
     )
 
 
@@ -982,35 +1323,59 @@ def _wait_for_character_or_existing_account(
     app: Application,
     *,
     timeout: float,
-) -> tuple[str, tuple[int, int, int, int] | None]:
+    game_ready_confidence: float,
+) -> tuple[str, tuple[int, int, int, int] | None, GameEntryEvidence | None]:
     """Karakter ekranını veya doğrudan oyuna geçen mevcut hesabı ayırt eder."""
     deadline = time.monotonic() + timeout
     blue_bar_frames = 0
+    game_ready_frames = 0
+    best_game_ready_score = 0.0
     while time.monotonic() < deadline:
-        window = _get_client_window(app, timeout=3.0)
-        region = _client_region(window)
-        screenshot = pyautogui.screenshot(region=region)
-        if _detect_two_blue_loading_bars(screenshot) is not None:
+        screenshot = pyautogui.screenshot()
+        blue, game_ready, score, candidates = _scan_game_entry_frame(
+            app,
+            screenshot,
+            game_ready_confidence=game_ready_confidence,
+        )
+        best_game_ready_score = max(best_game_ready_score, score)
+        if blue is not None:
             blue_bar_frames += 1
             if blue_bar_frames >= 2:
                 LOGGER.info("Hesap karakter ekranını atlayıp doğrudan oyun yüklemesine geçti.")
-                return "existing_verified", None
+                return "existing_verified", None, blue
         else:
             blue_bar_frames = 0
 
-        try:
-            dice = pyautogui.locateOnScreen(
-                str(CLIENT_DICE_IMAGE),
-                confidence=0.72,
-                region=region,
-            )
-            if dice is not None:
-                return "character_screen", tuple(int(value) for value in dice)
-        except pyautogui.ImageNotFoundException:
-            pass
+        if game_ready is not None:
+            game_ready_frames += 1
+            if game_ready_frames >= 2:
+                LOGGER.info("Mevcut hesap doğrudan Hemen Dene oyun ekranına geçti.")
+                return "existing_verified", None, game_ready
+        else:
+            game_ready_frames = 0
+
+        for candidate in candidates:
+            try:
+                dice = pyautogui.locateOnScreen(
+                    str(CLIENT_DICE_IMAGE),
+                    confidence=0.72,
+                    region=candidate.region,
+                )
+                if dice is not None:
+                    dice_values = tuple(int(value) for value in dice)
+                    return (
+                        "character_screen",
+                        (dice_values[0], dice_values[1], dice_values[2], dice_values[3]),
+                        None,
+                    )
+            except pyautogui.ImageNotFoundException:
+                continue
         time.sleep(0.5)
 
-    raise AutomationError("Girişten sonra karakter ekranı veya iki mavi bar görünmedi.")
+    raise AutomationError(
+        "Girişten sonra karakter ekranı, iki mavi bar veya Hemen Dene oyun ekranı "
+        f"görünmedi (en iyi oyun eşleşmesi={best_game_ready_score:.3f})."
+    )
 
 
 def _normalize_character_screen(window: Any) -> None:
@@ -1025,7 +1390,30 @@ def _normalize_character_screen(window: Any) -> None:
     time.sleep(2.0)
 
 
-def _kill_application(app: Application | None) -> None:
+def _legend_window_process_ids() -> set[int]:
+    process_ids: set[int] = set()
+    try:
+        for window in Desktop(backend="win32").windows():
+            title = str(window.window_text() or "").lower()
+            if "legend online" not in title:
+                continue
+            process_id = int(window.process_id())
+            if (
+                process_id > 0
+                and process_id != os.getpid()
+                and not _is_protected_automation_process_id(process_id)
+            ):
+                process_ids.add(process_id)
+    except Exception:
+        LOGGER.debug("Masaüstündeki Legend Online süreçleri listelenemedi.", exc_info=True)
+    return process_ids
+
+
+def _kill_application(
+    app: Application | None,
+    *,
+    additional_pids: set[int] | None = None,
+) -> None:
     if app is None:
         return
 
@@ -1037,10 +1425,15 @@ def _kill_application(app: Application | None) -> None:
     except Exception:
         LOGGER.debug("İstemci pywinauto ile kapatılamadı.", exc_info=True)
 
+    process_ids = set(additional_pids or set()) | _legend_window_process_ids()
     if isinstance(pid, int):
+        process_ids.add(pid)
+    process_ids.discard(os.getpid())
+
+    for process_id in sorted(process_ids):
         try:
             result = subprocess.run(
-                ["taskkill", "/F", "/T", "/PID", str(pid)],
+                ["taskkill", "/F", "/T", "/PID", str(process_id)],
                 capture_output=True,
                 text=True,
                 timeout=8,
@@ -1054,7 +1447,7 @@ def _kill_application(app: Application | None) -> None:
                 result.stderr.strip(),
             )
         except (OSError, subprocess.SubprocessError):
-            LOGGER.exception("İstemci süreç ağacı kapatılamadı (PID %s).", pid)
+            LOGGER.exception("İstemci süreç ağacı kapatılamadı (PID %s).", process_id)
 
     try:
         if app.is_process_running():
@@ -1072,12 +1465,13 @@ def run_desktop_client(
     client_path: Path,
     config: ClientConfig | None = None,
     on_character_submitted: Callable[[str], None] | None = None,
-    on_account_verified: Callable[[str], None] | None = None,
+    on_account_verified: Callable[[str, str], None] | None = None,
     known_nickname: str | None = None,
 ) -> str:
     """Mevcut hesapla istemci girişini ve karakter oluşturma adımını yürütür."""
     config = config or ClientConfig()
     app: Application | None = None
+    observed_game_pids: set[int] = set()
 
     try:
         LOGGER.info("Legend Online istemcisi başlatılıyor: %s", client_path)
@@ -1106,18 +1500,28 @@ def run_desktop_client(
         LOGGER.info("İstemci Giriş Yap butonuna tıklandı.")
 
         # Çökme/yeniden başlama sonrasında hesap aslında kurulmuş olabilir. Bu
-        # durumda karakter ekranı yerine iki mavi yükleme barı görünür ve hesap
-        # tekrar oluşturulmaya çalışılmadan doğrulanır.
-        post_login_state, initial_dice = _wait_for_character_or_existing_account(
+        # durumda karakter ekranı yerine mavi bar veya oyun içi Hemen Dene ekranı
+        # görünür ve hesap tekrar oluşturulmaya çalışılmadan doğrulanır.
+        post_login_state, initial_dice, existing_evidence = _wait_for_character_or_existing_account(
             app,
             timeout=config.image_timeout,
+            game_ready_confidence=config.game_ready_confidence,
         )
         if post_login_state == "existing_verified":
             nickname = known_nickname or "existing_account"
+            if existing_evidence is None:
+                raise AutomationError("Mevcut hesap ekranı kanıtsız döndü.")
+            if existing_evidence.process_id is not None:
+                observed_game_pids.add(existing_evidence.process_id)
             if on_account_verified is not None:
-                on_account_verified(nickname)
-            LOGGER.info("Mevcut hesap iki mavi barla doğrulandı: %s", email)
-            time.sleep(config.post_verification_wait)
+                on_account_verified(nickname, existing_evidence.method)
+            LOGGER.info(
+                "Mevcut hesap oyun girişiyle doğrulandı: %s | kanıt=%s",
+                email,
+                existing_evidence.method,
+            )
+            if existing_evidence.method != "two_blue_loading_bars":
+                time.sleep(config.post_verification_wait)
             return nickname
 
         # "7roll" benzeri yükleme ekranının bittiğini zar simgesi kanıtladı.
@@ -1161,21 +1565,33 @@ def run_desktop_client(
         _click_location(enter_location)
         LOGGER.info("Oyuna Gir butonuna tıklandı.")
         # Tıklama önce "doğrulama bekliyor" olarak yazılır. Kalıcı tamamlanma
-        # yalnızca aşağıdaki iki mavi bar doğrulamasından sonra kaydedilir.
+        # mavi bar veya oyun içi Hemen Dene ekranı doğrulamasından sonra kaydedilir.
         if on_character_submitted is not None:
             on_character_submitted(nickname)
-        _wait_for_two_blue_loading_bars(app, timeout=config.blue_bar_timeout)
+        entry_evidence = _wait_for_game_entry_success(
+            app,
+            timeout=config.game_entry_timeout,
+            game_ready_confidence=config.game_ready_confidence,
+        )
+        if entry_evidence.process_id is not None:
+            observed_game_pids.add(entry_evidence.process_id)
         if on_account_verified is not None:
-            on_account_verified(nickname)
-        LOGGER.info("Hesap çift doğrulamayı geçti: %s | karakter=%s", email, nickname)
-        time.sleep(config.post_verification_wait)
+            on_account_verified(nickname, entry_evidence.method)
+        LOGGER.info(
+            "Hesap oyun girişi doğrulamasını geçti: %s | karakter=%s | kanıt=%s",
+            email,
+            nickname,
+            entry_evidence.method,
+        )
+        if entry_evidence.method != "two_blue_loading_bars":
+            time.sleep(config.post_verification_wait)
         return nickname
     except KeyboardInterrupt:
         raise
     except pyautogui.FailSafeException as exc:
         raise AutomationError("PyAutoGUI acil durdurma tetiklendi.") from exc
     finally:
-        _kill_application(app)
+        _kill_application(app, additional_pids=observed_game_pids)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -1299,7 +1715,7 @@ def main(argv: list[str] | None = None) -> int:
             if progress.is_completed(email):
                 details = progress.details(email) or {}
                 LOGGER.info(
-                    "Hesap daha önce çift doğrulanmış; tamamen atlanıyor: %s | karakter=%s",
+                    "Hesap daha önce oyun girişiyle doğrulanmış; tamamen atlanıyor: %s | karakter=%s",
                     email,
                     details.get("nickname") or "bilinmiyor",
                 )
@@ -1340,20 +1756,27 @@ def main(argv: list[str] | None = None) -> int:
 
                     pending_details = progress.pending_details(email) or {}
                     known_nickname = str(pending_details.get("nickname", "")) or None
+
+                    def mark_submitted(submitted_nickname: str, account: str = email) -> None:
+                        progress.mark_submitted(account, submitted_nickname)
+
+                    def mark_verified(
+                        verified_nickname: str,
+                        method: str,
+                        account: str = email,
+                    ) -> None:
+                        progress.mark_completed(account, verified_nickname, method)
+
                     nickname = run_desktop_client(
                         email,
                         password,
                         client_path=client_path,
                         known_nickname=known_nickname,
-                        on_character_submitted=lambda submitted_nickname, account=email: (
-                            progress.mark_submitted(account, submitted_nickname)
-                        ),
-                        on_account_verified=lambda verified_nickname, account=email: (
-                            progress.mark_completed(account, verified_nickname)
-                        ),
+                        on_character_submitted=mark_submitted,
+                        on_account_verified=mark_verified,
                     )
                     if not progress.is_completed(email):
-                        raise AutomationError("İstemci döndü ancak çift doğrulama kaydı oluşmadı.")
+                        raise AutomationError("İstemci döndü ancak oyun girişi doğrulama kaydı oluşmadı.")
                     successful.append(email)
                     LOGGER.info("Hesap kesin tamamlandı: %s | karakter=%s", email, nickname)
                     break

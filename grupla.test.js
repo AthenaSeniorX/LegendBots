@@ -7,6 +7,7 @@ const path = require('node:path');
 const test = require('node:test');
 
 const {
+    buildBatchSourceData,
     buildLeaderLink,
     buildExecutionPlan,
     isLeader,
@@ -18,6 +19,32 @@ const {
     persistConfirmedGroupState,
     selectMemberRegistrationRole,
 } = require('./grupla');
+
+function createVerifiedAccountsFixture() {
+    const temporaryDirectory = fs.mkdtempSync(
+        path.join(os.tmpdir(), 'legendbots-verified-'),
+    );
+    const target = path.join(temporaryDirectory, 'completed_accounts.json');
+    const completedAccounts = {};
+    for (let index = 1; index <= 12; index += 1) {
+        completedAccounts[`hadestxz${index}@outlook.com`] = {
+            nickname: `NICK${index}`,
+            completed_at: `2026-07-21T10:${String(index).padStart(2, '0')}:00+03:00`,
+            verification: { test_fixture: true },
+        };
+    }
+    fs.writeFileSync(target, JSON.stringify({ version: 1, completed_accounts: completedAccounts }));
+    return { temporaryDirectory, target };
+}
+
+function withVerifiedAccountsFixture(callback) {
+    const fixture = createVerifiedAccountsFixture();
+    try {
+        return callback(loadVerifiedGroups(fixture.target));
+    } finally {
+        fs.rmSync(fixture.temporaryDirectory, { recursive: true, force: true });
+    }
+}
 
 test('CloudFront 403 sayfasını durum kodu veya gövde imzasından tanır', () => {
     assert.equal(isCloudFrontSignature(403, '', ''), true);
@@ -89,6 +116,17 @@ test('üye kaydı için lider sunucusu ve doğrulanmış nickname ile doğru rol
     assert.equal(role.roleId, 'expected');
 });
 
+test('existing_account yer tutucusunu lider sunucusundaki gerçek rolle çözer', () => {
+    const roles = [
+        { sid: '1411', roleName: 'head', roleId: '1' },
+        { sid: '1410', roleName: 'Boş', roleId: '2' },
+    ];
+    assert.equal(
+        selectMemberRegistrationRole(roles, '1411', 'existing_account').roleName,
+        'head',
+    );
+});
+
 test('lider hesaplar 1, 5, 9, 13 kuralını izler', () => {
     for (const leader of [1, 5, 9, 13, 17]) {
         assert.equal(isLeader(leader), true);
@@ -99,50 +137,53 @@ test('lider hesaplar 1, 5, 9, 13 kuralını izler', () => {
 });
 
 test('doğrulanmış hesaplar numaralarına göre tam dörtlü gruplara ayrılır', () => {
-    const source = loadVerifiedGroups();
-    assert.deepEqual(
-        source.completeGroups.map((group) =>
-            group.accounts.map((account) => account.index),
-        ),
-        [
-            [1, 2, 3, 4],
-            [5, 6, 7, 8],
-            [9, 10, 11, 12],
-        ],
-    );
-    assert.deepEqual(
-        source.completeGroups.map((group) => group.accounts[0].index),
-        [1, 5, 9],
-    );
+    withVerifiedAccountsFixture((source) => {
+        assert.deepEqual(
+            source.completeGroups.map((group) =>
+                group.accounts.map((account) => account.index),
+            ),
+            [
+                [1, 2, 3, 4],
+                [5, 6, 7, 8],
+                [9, 10, 11, 12],
+            ],
+        );
+        assert.deepEqual(
+            source.completeGroups.map((group) => group.accounts[0].index),
+            [1, 5, 9],
+        );
+    });
 });
 
 test('seçilen üye konumundan başlar ve sonraki grupları baştan işler', () => {
-    const source = loadVerifiedGroups();
-    const plan = buildExecutionPlan(source, { groupNumber: 2, memberPosition: 3 });
-    assert.deepEqual(
-        plan.map((item) => ({
-            group: item.group.groupNumber,
-            leader: item.group.accounts[0].index,
-            members: item.group.accounts
-                .filter((account) => account.position >= item.memberStartPosition)
-                .map((account) => account.index),
-        })),
-        [
-            { group: 2, leader: 5, members: [7, 8] },
-            { group: 3, leader: 9, members: [10, 11, 12] },
-        ],
-    );
+    withVerifiedAccountsFixture((source) => {
+        const plan = buildExecutionPlan(source, { groupNumber: 2, memberPosition: 3 });
+        assert.deepEqual(
+            plan.map((item) => ({
+                group: item.group.groupNumber,
+                leader: item.group.accounts[0].index,
+                members: item.group.accounts
+                    .filter((account) => account.position >= item.memberStartPosition)
+                    .map((account) => account.index),
+            })),
+            [
+                { group: 2, leader: 5, members: [7, 8] },
+                { group: 3, leader: 9, members: [10, 11, 12] },
+            ],
+        );
+    });
 });
 
 test('1. üye seçildiğinde liderden sonra aynı grubun 2, 3, 4 üyeleri işlenir', () => {
-    const source = loadVerifiedGroups();
-    const plan = buildExecutionPlan(source, { groupNumber: 1, memberPosition: 1 });
-    assert.deepEqual(
-        plan[0].group.accounts
-            .filter((account) => account.position >= plan[0].memberStartPosition)
-            .map((account) => account.index),
-        [2, 3, 4],
-    );
+    withVerifiedAccountsFixture((source) => {
+        const plan = buildExecutionPlan(source, { groupNumber: 1, memberPosition: 1 });
+        assert.deepEqual(
+            plan[0].group.accounts
+                .filter((account) => account.position >= plan[0].memberStartPosition)
+                .map((account) => account.index),
+            [2, 3, 4],
+        );
+    });
 });
 
 test('ayrıntılı grup durumu atomik JSON olarak yazılıp yeniden okunur', () => {
@@ -152,7 +193,8 @@ test('ayrıntılı grup durumu atomik JSON olarak yazılıp yeniden okunur', () 
     const target = path.join(temporaryDirectory, 'onaylanmis_gruplar.json');
 
     try {
-        const source = loadVerifiedGroups();
+        const fixture = createVerifiedAccountsFixture();
+        const source = loadVerifiedGroups(fixture.target);
         const state = loadConfirmedGroupState(source, target);
         persistConfirmedGroupState(state, target);
         state.updated_by_test = true;
@@ -171,7 +213,25 @@ test('ayrıntılı grup durumu atomik JSON olarak yazılıp yeniden okunur', () 
         assert.equal(serialized.includes('123321'), false);
         assert.equal(fs.existsSync(`${target}.tmp`), false);
         assert.equal(fs.existsSync(`${target}.bak`), false);
+        fs.rmSync(fixture.temporaryDirectory, { recursive: true, force: true });
     } finally {
         fs.rmSync(temporaryDirectory, { recursive: true, force: true });
     }
+});
+
+test('otonom kuyruk dört eski hesabı sıra konumlarıyla tek pakete dönüştürür', () => {
+    const source = buildBatchSourceData({
+        id: 'group-000123',
+        sequence: 123,
+        accounts: [41, 7, 99, 12].map((index) => ({
+            email: `hadestxz${index}@outlook.com`,
+            index,
+            nickname: `NICK${index}`,
+            created_at: '2026-07-21T10:00:00+03:00',
+        })),
+    });
+    assert.equal(source.completeGroups.length, 1);
+    assert.equal(source.completeGroups[0].groupNumber, 123);
+    assert.deepEqual(source.completeGroups[0].accounts.map((account) => account.position), [1, 2, 3, 4]);
+    assert.equal(source.completeGroups[0].accounts[0].positionAssignedByQueue, true);
 });

@@ -9,6 +9,6 @@ if errorlevel 1 (
 )
 
 echo LegendBots gruplama otomasyonu baslatiliyor...
-echo Optimize varsayilanlar: gercek Chrome, 15 sn hesap ve 60 sn grup sogumasi.
+echo Guvenli varsayilanlar: gercek Chrome, 60 sn hesap ve 180 sn grup sogumasi.
 node .\grupla.js %*
 exit /b %errorlevel%

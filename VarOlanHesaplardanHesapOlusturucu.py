@@ -33,7 +33,7 @@ if(len(emailFirstPlace) <= 8 and len(emailFirstPlace) >= 3):
             print("\n\n")
             for i in range(baslangicSayisi, (baslangicSayisi + numberOfAccount)):
                 app =  application.Application()
-                app.start("C:\Program Files (x86)\Legend Online\Legend Online.exe")
+                app.start(r"C:\Program Files (x86)\Legend Online\Legend Online.exe")
                 email = emailFirstPlace + str(i) + "@" + emailType
                 pyperclip.copy(email)
                 time.sleep(5)
@@ -80,4 +80,3 @@ else:
     print("Hata! En fazla 8 harf ve en az 3 harf girilmeli.")
     print("\n\n")
     os.system("PAUSE")
-

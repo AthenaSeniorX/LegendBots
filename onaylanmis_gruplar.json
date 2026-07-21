@@ -1,0 +1,3484 @@
+{
+  "version": 1,
+  "file_type": "legendbots_confirmed_groups",
+  "created_at": "2026-07-20T14:36:59.668Z",
+  "updated_at": "2026-07-20T16:04:27.547Z",
+  "grouping_policy": {
+    "group_size": 4,
+    "leader_position": 1,
+    "rule": "Hesap numarasına göre her ardışık dört hesap bir grup; en küçük numara lider.",
+    "membership_positions": [
+      2,
+      3,
+      4
+    ]
+  },
+  "source": {
+    "path": "completed_accounts.json",
+    "sha256": "b2975d6dc36ce7704e70c18d6cd3123d4dcd7df91427273af84a10e6777fc123",
+    "schema_version": 1,
+    "verified_account_count": 16,
+    "complete_group_count": 4,
+    "incomplete_groups": [],
+    "last_loaded_at": "2026-07-20T15:57:53.545Z"
+  },
+  "runs": [
+    {
+      "run_id": "98c1fd32-3547-4d77-9735-27bf6fe447c0",
+      "started_at": "2026-07-20T14:36:59.671Z",
+      "completed_at": "2026-07-20T14:46:03.113Z",
+      "status": "interrupted",
+      "requested_start_group": 1,
+      "requested_start_member_position": 3,
+      "browser_mode": "incognito_visible",
+      "planned_groups": [
+        1,
+        2,
+        3
+      ],
+      "completed_groups_during_run": [],
+      "error": {
+        "at": "2026-07-20T14:46:03.114Z",
+        "message": "Önceki süreç kesin sonuç yazmadan kapandı; sonraki çalışmada kurtarıldı."
+      }
+    },
+    {
+      "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+      "started_at": "2026-07-20T14:46:03.116Z",
+      "completed_at": "2026-07-20T14:48:15.770Z",
+      "status": "failed",
+      "requested_start_group": 1,
+      "requested_start_member_position": 3,
+      "browser_mode": "incognito_visible",
+      "planned_groups": [
+        1,
+        2,
+        3
+      ],
+      "completed_groups_during_run": [],
+      "error": {
+        "at": "2026-07-20T14:48:15.770Z",
+        "message": "hadestxz3@outlook.com 5 denemede doğrulanamadı. Güvenlik gereği sıradaki üyeye veya gruba geçilmedi."
+      }
+    },
+    {
+      "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+      "started_at": "2026-07-20T14:54:30.875Z",
+      "completed_at": "2026-07-20T14:56:52.140Z",
+      "status": "failed",
+      "requested_start_group": 1,
+      "requested_start_member_position": 3,
+      "browser_mode": "incognito_visible",
+      "planned_groups": [
+        1,
+        2,
+        3
+      ],
+      "completed_groups_during_run": [],
+      "error": {
+        "at": "2026-07-20T14:56:52.140Z",
+        "message": "hadestxz3@outlook.com 5 denemede doğrulanamadı. Güvenlik gereği sıradaki üyeye veya gruba geçilmedi."
+      }
+    },
+    {
+      "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+      "started_at": "2026-07-20T15:04:43.752Z",
+      "completed_at": "2026-07-20T15:06:00.433Z",
+      "status": "failed",
+      "requested_start_group": 1,
+      "requested_start_member_position": 3,
+      "browser_mode": "incognito_visible",
+      "planned_groups": [
+        1,
+        2,
+        3
+      ],
+      "completed_groups_during_run": [],
+      "error": {
+        "at": "2026-07-20T15:06:00.433Z",
+        "message": "hadestxz3@outlook.com 5 denemede doğrulanamadı. Güvenlik gereği sıradaki üyeye veya gruba geçilmedi."
+      }
+    },
+    {
+      "run_id": "52ab44d0-b29d-496a-9768-1bf234fc77bb",
+      "started_at": "2026-07-20T15:09:47.623Z",
+      "completed_at": "2026-07-20T15:12:02.812Z",
+      "status": "interrupted",
+      "requested_start_group": 1,
+      "requested_start_member_position": 3,
+      "browser_mode": "incognito_visible",
+      "planned_groups": [
+        1,
+        2,
+        3
+      ],
+      "completed_groups_during_run": [],
+      "error": {
+        "at": "2026-07-20T15:12:02.813Z",
+        "message": "Önceki süreç kesin sonuç yazmadan kapandı; sonraki çalışmada kurtarıldı."
+      }
+    },
+    {
+      "run_id": "d213b97e-3c39-4aa9-9451-7d0fc8314083",
+      "started_at": "2026-07-20T15:12:02.814Z",
+      "completed_at": "2026-07-20T15:12:25.803Z",
+      "status": "failed",
+      "requested_start_group": 1,
+      "requested_start_member_position": 3,
+      "browser_mode": "incognito_visible",
+      "planned_groups": [
+        1,
+        2,
+        3
+      ],
+      "completed_groups_during_run": [],
+      "error": {
+        "at": "2026-07-20T15:12:25.803Z",
+        "message": "\"Kabul Et\" paneli görünür değil ve beklenen takım doğrulanamadı. Görünen kadro=Q4UONT7TTSLA, kivilcim, SND28SIIPRFW; uyarılar=Küçük Takım Daveti Bir takıma katıldınız, tekrar daveti kabul edemezsiniz. Onayla | Ödül Kodum Dikkat: Tüm ödül kodu, olay sona erdikten 5 gün sonra otomatik olarak silinir, zamanında kullanınız. Paylaşma Ödülü Davet Ödülü Takım Ödülü Ödeme Ödülü Sunucu Tür Ödül Kodu Tarih Sunucu Tür Ödül Kodu Tarih Sunucu Tür Ödül Kodu Tarih Sunucu Tür Ödül Kodu Tarih."
+      }
+    },
+    {
+      "run_id": "33c67cec-298a-4805-89ce-f0777aff9975",
+      "started_at": "2026-07-20T15:14:46.538Z",
+      "completed_at": "2026-07-20T15:16:23.522Z",
+      "status": "failed",
+      "requested_start_group": 1,
+      "requested_start_member_position": 3,
+      "browser_mode": "incognito_visible",
+      "planned_groups": [
+        1,
+        2,
+        3
+      ],
+      "completed_groups_during_run": [],
+      "error": {
+        "at": "2026-07-20T15:16:23.522Z",
+        "message": "/agreeTeam üyeliği aynı oturumda 5 denemede doğrulanamadı: HTTP 400, kod=ERR901, mesaj={\"status\":\"error\",\"exception\":\"user is null\",\"err_code\":\"ERR901\"} [sid=var, ud=yok, roleid=var, teamud=var, rol_adayı=5, mouse_tıklama=1, content-type=application/json, status-text=yok, panel_yanıt_süresince_açık=true]"
+      }
+    },
+    {
+      "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+      "started_at": "2026-07-20T15:18:19.477Z",
+      "completed_at": "2026-07-20T15:26:20.447Z",
+      "status": "failed",
+      "requested_start_group": 1,
+      "requested_start_member_position": 3,
+      "browser_mode": "incognito_visible",
+      "planned_groups": [
+        1,
+        2,
+        3
+      ],
+      "completed_groups_during_run": [
+        1,
+        2
+      ],
+      "error": {
+        "at": "2026-07-20T15:26:20.447Z",
+        "message": "hadestxz10@outlook.com 5 denemede doğrulanamadı. Güvenlik gereği sıradaki üyeye veya gruba geçilmedi."
+      }
+    },
+    {
+      "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+      "started_at": "2026-07-20T15:32:14.505Z",
+      "completed_at": "2026-07-20T15:42:21.182Z",
+      "status": "completed",
+      "requested_start_group": 3,
+      "requested_start_member_position": 2,
+      "browser_mode": "incognito_visible",
+      "planned_groups": [
+        3
+      ],
+      "completed_groups_during_run": [
+        3
+      ],
+      "error": null
+    },
+    {
+      "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+      "started_at": "2026-07-20T15:44:27.819Z",
+      "completed_at": "2026-07-20T15:49:18.517Z",
+      "status": "completed",
+      "requested_start_group": 3,
+      "requested_start_member_position": 3,
+      "browser_mode": "incognito_visible",
+      "planned_groups": [
+        3
+      ],
+      "completed_groups_during_run": [
+        3
+      ],
+      "error": null
+    },
+    {
+      "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+      "started_at": "2026-07-20T15:57:53.559Z",
+      "completed_at": "2026-07-20T16:04:27.547Z",
+      "status": "completed",
+      "requested_start_group": 4,
+      "requested_start_member_position": 1,
+      "browser_mode": "incognito_visible",
+      "planned_groups": [
+        4
+      ],
+      "completed_groups_during_run": [
+        4
+      ],
+      "error": null
+    }
+  ],
+  "groups": {
+    "1": {
+      "group_number": 1,
+      "account_range": {
+        "first": 1,
+        "last": 4
+      },
+      "leader_position": 1,
+      "leader_account_index": 1,
+      "status": "confirmed",
+      "confirmed_at": "2026-07-20T15:19:12.324Z",
+      "created_at": "2026-07-20T14:36:59.669Z",
+      "updated_at": "2026-07-20T15:57:53.559Z",
+      "invite": {
+        "generated_at": "2026-07-20T15:18:29.524Z",
+        "generated_by_position": 1,
+        "generated_by_account_index": 1,
+        "generated_by_email": "hadestxz1@outlook.com",
+        "invitation_type": "team",
+        "endpoint_origin": "https://newserver79-lotr.oasgames.com",
+        "query_fields": [
+          "sid",
+          "ud",
+          "type",
+          "shareuid",
+          "um"
+        ],
+        "full_url_stored": false,
+        "url_sha256": "b337d8b5c193da06d7bbb20f13bced97c0647a57dde61b1de1dcf1c9e711e76c",
+        "runtime_lifetime": "memory_only_until_current_group_finishes",
+        "server_id": "1411"
+      },
+      "verification": {
+        "expected_member_count": 4,
+        "confirmed_member_count": 4,
+        "confirmed_positions": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "all_members_confirmed": true,
+        "last_server_roster": [
+          "RUBYIM9Z6Y3Z",
+          "kivilcim",
+          "SND28SIIPRFW",
+          "Q4UONT7TTSLA"
+        ],
+        "last_checked_at": "2026-07-20T15:19:12.324Z"
+      },
+      "event_history": [
+        {
+          "at": "2026-07-20T14:36:59.674Z",
+          "run_id": "98c1fd32-3547-4d77-9735-27bf6fe447c0",
+          "type": "group_processing_started",
+          "requested_start_position": 3,
+          "actual_member_start_position": 3
+        },
+        {
+          "at": "2026-07-20T14:36:59.678Z",
+          "run_id": "98c1fd32-3547-4d77-9735-27bf6fe447c0",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 1,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T14:37:08.034Z",
+          "run_id": "98c1fd32-3547-4d77-9735-27bf6fe447c0",
+          "type": "account_attempt_failed",
+          "position": 1,
+          "account_index": 1,
+          "run_attempt": 1,
+          "error": "OAS etkinlik rollerinde doğrulanmış karakter bulunamadı. Beklenen=Kivilcim, görünen=yok."
+        },
+        {
+          "at": "2026-07-20T14:37:11.040Z",
+          "run_id": "98c1fd32-3547-4d77-9735-27bf6fe447c0",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 1,
+          "run_attempt": 2
+        },
+        {
+          "at": "2026-07-20T14:37:19.126Z",
+          "run_id": "98c1fd32-3547-4d77-9735-27bf6fe447c0",
+          "type": "account_attempt_failed",
+          "position": 1,
+          "account_index": 1,
+          "run_attempt": 2,
+          "error": "OAS etkinlik rollerinde doğrulanmış karakter bulunamadı. Beklenen=Kivilcim, görünen=yok."
+        },
+        {
+          "at": "2026-07-20T14:46:03.119Z",
+          "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+          "type": "group_processing_started",
+          "requested_start_position": 3,
+          "actual_member_start_position": 3
+        },
+        {
+          "at": "2026-07-20T14:46:03.123Z",
+          "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 1,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T14:46:11.485Z",
+          "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+          "type": "leader_invite_generated",
+          "account_index": 1,
+          "role_name": "Kivilcim",
+          "invite_url_sha256": "b337d8b5c193da06d7bbb20f13bced97c0647a57dde61b1de1dcf1c9e711e76c"
+        },
+        {
+          "at": "2026-07-20T14:46:11.489Z",
+          "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T14:46:22.527Z",
+          "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 1,
+          "error": "/agreeTeam üyelik isteği başarısız: HTTP 400, kod=bilinmeyen-kod, mesaj=Sunucu ayrıntı vermedi."
+        },
+        {
+          "at": "2026-07-20T14:46:25.531Z",
+          "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 2
+        },
+        {
+          "at": "2026-07-20T14:46:34.728Z",
+          "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 2,
+          "error": "/agreeTeam üyelik isteği başarısız: HTTP 400, kod=bilinmeyen-kod, mesaj=Sunucu ayrıntı vermedi."
+        },
+        {
+          "at": "2026-07-20T14:46:40.735Z",
+          "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 3
+        },
+        {
+          "at": "2026-07-20T14:47:12.892Z",
+          "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 3,
+          "error": "Waiting for selector `#user_email` failed: Waiting failed: 30000ms exceeded"
+        },
+        {
+          "at": "2026-07-20T14:47:21.903Z",
+          "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 4
+        },
+        {
+          "at": "2026-07-20T14:47:53.983Z",
+          "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 4,
+          "error": "Waiting for selector `#user_email` failed: Waiting failed: 30000ms exceeded"
+        },
+        {
+          "at": "2026-07-20T14:48:06.002Z",
+          "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 5
+        },
+        {
+          "at": "2026-07-20T14:48:15.765Z",
+          "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 5,
+          "error": "/agreeTeam üyelik isteği başarısız: HTTP 400, kod=bilinmeyen-kod, mesaj=Sunucu ayrıntı vermedi."
+        },
+        {
+          "at": "2026-07-20T14:54:30.879Z",
+          "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+          "type": "group_processing_started",
+          "requested_start_position": 3,
+          "actual_member_start_position": 3
+        },
+        {
+          "at": "2026-07-20T14:54:30.881Z",
+          "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 1,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T14:54:41.010Z",
+          "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+          "type": "leader_invite_generated",
+          "account_index": 1,
+          "role_name": "Kivilcim",
+          "invite_url_sha256": "b337d8b5c193da06d7bbb20f13bced97c0647a57dde61b1de1dcf1c9e711e76c"
+        },
+        {
+          "at": "2026-07-20T14:54:41.014Z",
+          "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T14:54:53.351Z",
+          "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 1,
+          "error": "/agreeTeam üyelik isteği başarısız: HTTP 400, kod=bilinmeyen-kod, mesaj=Sunucu ayrıntı vermedi. [sid=var, ud=var, roleid=var, teamud=var, rol_adayı=0, mouse_tıklama=1, content-type=application/json, status-text=yok]"
+        },
+        {
+          "at": "2026-07-20T14:54:56.357Z",
+          "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 2
+        },
+        {
+          "at": "2026-07-20T14:55:08.516Z",
+          "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 2,
+          "error": "/agreeTeam üyelik isteği başarısız: HTTP 400, kod=bilinmeyen-kod, mesaj=Sunucu ayrıntı vermedi. [sid=var, ud=var, roleid=var, teamud=var, rol_adayı=0, mouse_tıklama=1, content-type=application/json, status-text=yok]"
+        },
+        {
+          "at": "2026-07-20T14:55:14.524Z",
+          "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 3
+        },
+        {
+          "at": "2026-07-20T14:55:46.570Z",
+          "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 3,
+          "error": "Waiting for selector `#user_email` failed: Waiting failed: 30000ms exceeded"
+        },
+        {
+          "at": "2026-07-20T14:55:55.581Z",
+          "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 4
+        },
+        {
+          "at": "2026-07-20T14:56:27.630Z",
+          "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 4,
+          "error": "Waiting for selector `#user_email` failed: Waiting failed: 30000ms exceeded"
+        },
+        {
+          "at": "2026-07-20T14:56:39.644Z",
+          "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 5
+        },
+        {
+          "at": "2026-07-20T14:56:52.135Z",
+          "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 5,
+          "error": "/agreeTeam üyelik isteği başarısız: HTTP 400, kod=bilinmeyen-kod, mesaj=Sunucu ayrıntı vermedi. [sid=var, ud=var, roleid=var, teamud=var, rol_adayı=0, mouse_tıklama=1, content-type=application/json, status-text=yok]"
+        },
+        {
+          "at": "2026-07-20T15:04:43.758Z",
+          "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+          "type": "group_processing_started",
+          "requested_start_position": 3,
+          "actual_member_start_position": 3
+        },
+        {
+          "at": "2026-07-20T15:04:43.761Z",
+          "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 1,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:04:53.906Z",
+          "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+          "type": "leader_invite_generated",
+          "account_index": 1,
+          "role_name": "Kivilcim",
+          "invite_url_sha256": "b337d8b5c193da06d7bbb20f13bced97c0647a57dde61b1de1dcf1c9e711e76c"
+        },
+        {
+          "at": "2026-07-20T15:04:53.910Z",
+          "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:05:03.617Z",
+          "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 1,
+          "error": "\"Kabul Et\" öğesi bulundu ancak takım daveti görünür değil."
+        },
+        {
+          "at": "2026-07-20T15:05:06.627Z",
+          "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 2
+        },
+        {
+          "at": "2026-07-20T15:05:16.718Z",
+          "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 2,
+          "error": "\"Kabul Et\" öğesi bulundu ancak takım daveti görünür değil."
+        },
+        {
+          "at": "2026-07-20T15:05:22.737Z",
+          "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 3
+        },
+        {
+          "at": "2026-07-20T15:05:32.175Z",
+          "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 3,
+          "error": "Waiting for selector `#user_email` failed: Protocol error (Runtime.callFunctionOn): Target closed"
+        },
+        {
+          "at": "2026-07-20T15:05:41.193Z",
+          "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 4
+        },
+        {
+          "at": "2026-07-20T15:05:45.029Z",
+          "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 4,
+          "error": "Waiting for selector `#user_email` failed: Protocol error (Runtime.callFunctionOn): Target closed"
+        },
+        {
+          "at": "2026-07-20T15:05:57.045Z",
+          "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 5
+        },
+        {
+          "at": "2026-07-20T15:06:00.426Z",
+          "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 5,
+          "error": "Waiting for selector `#user_email` failed: Protocol error (Runtime.callFunctionOn): Target closed"
+        },
+        {
+          "at": "2026-07-20T15:12:03.195Z",
+          "run_id": "d213b97e-3c39-4aa9-9451-7d0fc8314083",
+          "type": "group_processing_started",
+          "requested_start_position": 3,
+          "actual_member_start_position": 3
+        },
+        {
+          "at": "2026-07-20T15:12:03.201Z",
+          "run_id": "d213b97e-3c39-4aa9-9451-7d0fc8314083",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 1,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:12:12.579Z",
+          "run_id": "d213b97e-3c39-4aa9-9451-7d0fc8314083",
+          "type": "leader_invite_generated",
+          "account_index": 1,
+          "role_name": "Kivilcim",
+          "invite_url_sha256": "b337d8b5c193da06d7bbb20f13bced97c0647a57dde61b1de1dcf1c9e711e76c"
+        },
+        {
+          "at": "2026-07-20T15:12:12.585Z",
+          "run_id": "d213b97e-3c39-4aa9-9451-7d0fc8314083",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:12:25.792Z",
+          "run_id": "d213b97e-3c39-4aa9-9451-7d0fc8314083",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 1,
+          "error": "\"Kabul Et\" paneli görünür değil ve beklenen takım doğrulanamadı. Görünen kadro=Q4UONT7TTSLA, kivilcim, SND28SIIPRFW; uyarılar=Küçük Takım Daveti Bir takıma katıldınız, tekrar daveti kabul edemezsiniz. Onayla | Ödül Kodum Dikkat: Tüm ödül kodu, olay sona erdikten 5 gün sonra otomatik olarak silinir, zamanında kullanınız. Paylaşma Ödülü Davet Ödülü Takım Ödülü Ödeme Ödülü Sunucu Tür Ödül Kodu Tarih Sunucu Tür Ödül Kodu Tarih Sunucu Tür Ödül Kodu Tarih Sunucu Tür Ödül Kodu Tarih."
+        },
+        {
+          "at": "2026-07-20T15:14:46.931Z",
+          "run_id": "33c67cec-298a-4805-89ce-f0777aff9975",
+          "type": "group_processing_started",
+          "requested_start_position": 3,
+          "actual_member_start_position": 3
+        },
+        {
+          "at": "2026-07-20T15:14:46.939Z",
+          "run_id": "33c67cec-298a-4805-89ce-f0777aff9975",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 1,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:14:56.355Z",
+          "run_id": "33c67cec-298a-4805-89ce-f0777aff9975",
+          "type": "leader_invite_generated",
+          "account_index": 1,
+          "role_name": "Kivilcim",
+          "invite_url_sha256": "b337d8b5c193da06d7bbb20f13bced97c0647a57dde61b1de1dcf1c9e711e76c"
+        },
+        {
+          "at": "2026-07-20T15:14:56.355Z",
+          "run_id": "33c67cec-298a-4805-89ce-f0777aff9975",
+          "type": "accounts_reconciled_from_server_roster",
+          "positions": [
+            2,
+            3
+          ],
+          "roster": [
+            "kivilcim",
+            "SND28SIIPRFW",
+            "Q4UONT7TTSLA"
+          ]
+        },
+        {
+          "at": "2026-07-20T15:14:56.364Z",
+          "run_id": "33c67cec-298a-4805-89ce-f0777aff9975",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:15:08.361Z",
+          "run_id": "33c67cec-298a-4805-89ce-f0777aff9975",
+          "type": "member_membership_confirmed",
+          "position": 3,
+          "account_index": 3,
+          "role_name": "Q4UONT7TTSLA",
+          "join_mode": "already_in_expected_team",
+          "invitation_closed_checks": 2,
+          "server_roster": [
+            "Q4UONT7TTSLA",
+            "kivilcim",
+            "SND28SIIPRFW"
+          ]
+        },
+        {
+          "at": "2026-07-20T15:15:08.368Z",
+          "run_id": "33c67cec-298a-4805-89ce-f0777aff9975",
+          "type": "account_attempt_started",
+          "position": 4,
+          "account_index": 4,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:16:23.507Z",
+          "run_id": "33c67cec-298a-4805-89ce-f0777aff9975",
+          "type": "account_attempt_failed",
+          "position": 4,
+          "account_index": 4,
+          "run_attempt": 1,
+          "error": "/agreeTeam üyeliği aynı oturumda 5 denemede doğrulanamadı: HTTP 400, kod=ERR901, mesaj={\"status\":\"error\",\"exception\":\"user is null\",\"err_code\":\"ERR901\"} [sid=var, ud=yok, roleid=var, teamud=var, rol_adayı=5, mouse_tıklama=1, content-type=application/json, status-text=yok, panel_yanıt_süresince_açık=true]"
+        },
+        {
+          "at": "2026-07-20T15:18:19.874Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "group_processing_started",
+          "requested_start_position": 3,
+          "actual_member_start_position": 3
+        },
+        {
+          "at": "2026-07-20T15:18:19.884Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 1,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:18:29.525Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "leader_invite_generated",
+          "account_index": 1,
+          "role_name": "Kivilcim",
+          "invite_url_sha256": "b337d8b5c193da06d7bbb20f13bced97c0647a57dde61b1de1dcf1c9e711e76c"
+        },
+        {
+          "at": "2026-07-20T15:18:29.532Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 3,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:18:41.382Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "member_membership_confirmed",
+          "position": 3,
+          "account_index": 3,
+          "role_name": "Q4UONT7TTSLA",
+          "join_mode": "already_in_expected_team",
+          "invitation_closed_checks": 2,
+          "server_roster": [
+            "Q4UONT7TTSLA",
+            "kivilcim",
+            "SND28SIIPRFW"
+          ]
+        },
+        {
+          "at": "2026-07-20T15:18:41.388Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 4,
+          "account_index": 4,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:19:12.324Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "member_membership_confirmed",
+          "position": 4,
+          "account_index": 4,
+          "role_name": "RUBYIM9Z6Y3Z",
+          "join_mode": "controlled_physical_mouse_agree_team_success",
+          "invitation_closed_checks": 2,
+          "server_roster": [
+            "RUBYIM9Z6Y3Z",
+            "kivilcim",
+            "SND28SIIPRFW",
+            "Q4UONT7TTSLA"
+          ]
+        },
+        {
+          "at": "2026-07-20T15:19:12.330Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "group_processing_finished",
+          "final_status": "confirmed",
+          "confirmed_positions": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "at": "2026-07-20T15:19:12.330Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "leader_invite_removed_from_runtime_memory"
+        }
+      ],
+      "accounts": [
+        {
+          "position": 1,
+          "group_role": "leader",
+          "account_index": 1,
+          "email": "hadestxz1@outlook.com",
+          "nickname_from_verified_accounts": "Kivilcim",
+          "account_creation_verified_at": "2026-07-20T16:08:06+03:00",
+          "account_creation_verification": {
+            "email_progress_key": "hadestxz1@outlook.com",
+            "manual_user_confirmation": true
+          },
+          "source_account_verified": true,
+          "grouping_status": "leader_confirmed",
+          "actual_role_name": "kivilcim",
+          "grouping_attempt_count": 8,
+          "last_attempt_at": "2026-07-20T15:18:19.884Z",
+          "confirmed_at": "2026-07-20T15:18:29.524Z",
+          "last_error": null,
+          "evidence": {
+            "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+            "role_matches_verified_nickname": true,
+            "role_name_source": "completed_accounts.json",
+            "role_binding_verified": true,
+            "server_id": "1411",
+            "role_id": "358989916142915",
+            "initial_server_roster": [
+              "kivilcim",
+              "SND28SIIPRFW",
+              "Q4UONT7TTSLA"
+            ],
+            "invite_link": {
+              "full_url_stored": false,
+              "reason": "um ve kullanıcı kimliği içeren davet URLsi güvenlik için saklanmaz.",
+              "sha256": "b337d8b5c193da06d7bbb20f13bced97c0647a57dde61b1de1dcf1c9e711e76c",
+              "runtime_lifetime": "memory_only_until_current_group_finishes"
+            }
+          },
+          "attempt_history": [
+            {
+              "at": "2026-07-20T14:36:59.678Z",
+              "run_id": "98c1fd32-3547-4d77-9735-27bf6fe447c0",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T14:37:08.034Z",
+              "run_id": "98c1fd32-3547-4d77-9735-27bf6fe447c0",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "OAS etkinlik rollerinde doğrulanmış karakter bulunamadı. Beklenen=Kivilcim, görünen=yok."
+            },
+            {
+              "at": "2026-07-20T14:37:11.040Z",
+              "run_id": "98c1fd32-3547-4d77-9735-27bf6fe447c0",
+              "attempt": 2,
+              "run_attempt": 2,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T14:37:19.126Z",
+              "run_id": "98c1fd32-3547-4d77-9735-27bf6fe447c0",
+              "attempt": 2,
+              "run_attempt": 2,
+              "outcome": "failed",
+              "error": "OAS etkinlik rollerinde doğrulanmış karakter bulunamadı. Beklenen=Kivilcim, görünen=yok."
+            },
+            {
+              "at": "2026-07-20T14:46:03.123Z",
+              "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+              "attempt": 3,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T14:46:11.485Z",
+              "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+              "attempt": 3,
+              "outcome": "leader_confirmed",
+              "role_name": "Kivilcim"
+            },
+            {
+              "at": "2026-07-20T14:54:30.881Z",
+              "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+              "attempt": 4,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T14:54:41.010Z",
+              "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+              "attempt": 4,
+              "outcome": "leader_confirmed",
+              "role_name": "Kivilcim"
+            },
+            {
+              "at": "2026-07-20T15:04:43.761Z",
+              "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+              "attempt": 5,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:04:53.906Z",
+              "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+              "attempt": 5,
+              "outcome": "leader_confirmed",
+              "role_name": "Kivilcim"
+            },
+            {
+              "at": "2026-07-20T15:12:03.201Z",
+              "run_id": "d213b97e-3c39-4aa9-9451-7d0fc8314083",
+              "attempt": 6,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:12:12.579Z",
+              "run_id": "d213b97e-3c39-4aa9-9451-7d0fc8314083",
+              "attempt": 6,
+              "outcome": "leader_confirmed",
+              "role_name": "Kivilcim"
+            },
+            {
+              "at": "2026-07-20T15:14:46.939Z",
+              "run_id": "33c67cec-298a-4805-89ce-f0777aff9975",
+              "attempt": 7,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:14:56.355Z",
+              "run_id": "33c67cec-298a-4805-89ce-f0777aff9975",
+              "attempt": 7,
+              "outcome": "leader_confirmed",
+              "role_name": "Kivilcim"
+            },
+            {
+              "at": "2026-07-20T15:18:19.884Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 8,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:18:29.525Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 8,
+              "outcome": "leader_confirmed",
+              "role_name": "Kivilcim"
+            }
+          ]
+        },
+        {
+          "position": 2,
+          "group_role": "member",
+          "account_index": 2,
+          "email": "hadestxz2@outlook.com",
+          "nickname_from_verified_accounts": "SND28SIIPRFW",
+          "account_creation_verified_at": "2026-07-20T16:08:06+03:00",
+          "account_creation_verification": {
+            "email_progress_key": "hadestxz2@outlook.com",
+            "manual_user_confirmation": true
+          },
+          "source_account_verified": true,
+          "grouping_status": "membership_confirmed",
+          "actual_role_name": "SND28SIIPRFW",
+          "grouping_attempt_count": 0,
+          "last_attempt_at": null,
+          "confirmed_at": "2026-07-20T15:14:56.355Z",
+          "last_error": null,
+          "evidence": {
+            "run_id": "33c67cec-298a-4805-89ce-f0777aff9975",
+            "join_mode": "server_roster_reconciliation",
+            "source": "Küçük Takımın sunucu kadrosu",
+            "roster": [
+              "kivilcim",
+              "SND28SIIPRFW",
+              "Q4UONT7TTSLA"
+            ],
+            "expected_role_name": "SND28SIIPRFW",
+            "actual_role_name": "SND28SIIPRFW",
+            "case_insensitive_match": true
+          },
+          "attempt_history": []
+        },
+        {
+          "position": 3,
+          "group_role": "member",
+          "account_index": 3,
+          "email": "hadestxz3@outlook.com",
+          "nickname_from_verified_accounts": "Q4UONT7TTSLA",
+          "account_creation_verified_at": "2026-07-20T16:08:06+03:00",
+          "account_creation_verification": {
+            "email_progress_key": "hadestxz3@outlook.com",
+            "manual_user_confirmation": true
+          },
+          "source_account_verified": true,
+          "grouping_status": "membership_confirmed",
+          "actual_role_name": "Q4UONT7TTSLA",
+          "grouping_attempt_count": 18,
+          "last_attempt_at": "2026-07-20T15:18:29.532Z",
+          "confirmed_at": "2026-07-20T15:18:41.382Z",
+          "last_error": null,
+          "evidence": {
+            "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+            "role_matches_verified_nickname": true,
+            "already_member_before_request": true,
+            "join_mode": "already_in_expected_team",
+            "role_name_source": "completed_accounts.json",
+            "event_registration": {
+              "required": false,
+              "verified": true,
+              "reason": "Etkinlik kullanıcı kaydı zaten mevcut."
+            },
+            "api": {
+              "request_sent": false,
+              "reason": "Sunucu listesi üyeliği işlem öncesinde doğruladı."
+            },
+            "server": {
+              "expected_leader_role": "Kivilcim",
+              "expected_member_role": "Q4UONT7TTSLA",
+              "roster": [
+                "Q4UONT7TTSLA",
+                "kivilcim",
+                "SND28SIIPRFW"
+              ],
+              "membership_match": true
+            },
+            "invitation_ui": {
+              "dismissed_immediately": true,
+              "persistent_closed_checks": 2,
+              "persistent_closed": true
+            },
+            "browser_flow": {
+              "private_browser_context": true,
+              "login_tab": "first_tab",
+              "invitation_tab": "second_tab",
+              "leader_link_source": "in_memory_from_group_leader",
+              "same_private_context_for_member_tabs": true
+            }
+          },
+          "attempt_history": [
+            {
+              "at": "2026-07-20T14:46:11.489Z",
+              "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T14:46:22.527Z",
+              "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "/agreeTeam üyelik isteği başarısız: HTTP 400, kod=bilinmeyen-kod, mesaj=Sunucu ayrıntı vermedi."
+            },
+            {
+              "at": "2026-07-20T14:46:25.531Z",
+              "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+              "attempt": 2,
+              "run_attempt": 2,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T14:46:34.728Z",
+              "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+              "attempt": 2,
+              "run_attempt": 2,
+              "outcome": "failed",
+              "error": "/agreeTeam üyelik isteği başarısız: HTTP 400, kod=bilinmeyen-kod, mesaj=Sunucu ayrıntı vermedi."
+            },
+            {
+              "at": "2026-07-20T14:46:40.735Z",
+              "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+              "attempt": 3,
+              "run_attempt": 3,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T14:47:12.892Z",
+              "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+              "attempt": 3,
+              "run_attempt": 3,
+              "outcome": "failed",
+              "error": "Waiting for selector `#user_email` failed: Waiting failed: 30000ms exceeded"
+            },
+            {
+              "at": "2026-07-20T14:47:21.903Z",
+              "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+              "attempt": 4,
+              "run_attempt": 4,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T14:47:53.983Z",
+              "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+              "attempt": 4,
+              "run_attempt": 4,
+              "outcome": "failed",
+              "error": "Waiting for selector `#user_email` failed: Waiting failed: 30000ms exceeded"
+            },
+            {
+              "at": "2026-07-20T14:48:06.002Z",
+              "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+              "attempt": 5,
+              "run_attempt": 5,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T14:48:15.765Z",
+              "run_id": "184414a3-c90e-4f6a-9824-e2997b0dd2ac",
+              "attempt": 5,
+              "run_attempt": 5,
+              "outcome": "failed",
+              "error": "/agreeTeam üyelik isteği başarısız: HTTP 400, kod=bilinmeyen-kod, mesaj=Sunucu ayrıntı vermedi."
+            },
+            {
+              "at": "2026-07-20T14:54:41.014Z",
+              "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+              "attempt": 6,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T14:54:53.351Z",
+              "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+              "attempt": 6,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "/agreeTeam üyelik isteği başarısız: HTTP 400, kod=bilinmeyen-kod, mesaj=Sunucu ayrıntı vermedi. [sid=var, ud=var, roleid=var, teamud=var, rol_adayı=0, mouse_tıklama=1, content-type=application/json, status-text=yok]"
+            },
+            {
+              "at": "2026-07-20T14:54:56.357Z",
+              "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+              "attempt": 7,
+              "run_attempt": 2,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T14:55:08.516Z",
+              "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+              "attempt": 7,
+              "run_attempt": 2,
+              "outcome": "failed",
+              "error": "/agreeTeam üyelik isteği başarısız: HTTP 400, kod=bilinmeyen-kod, mesaj=Sunucu ayrıntı vermedi. [sid=var, ud=var, roleid=var, teamud=var, rol_adayı=0, mouse_tıklama=1, content-type=application/json, status-text=yok]"
+            },
+            {
+              "at": "2026-07-20T14:55:14.524Z",
+              "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+              "attempt": 8,
+              "run_attempt": 3,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T14:55:46.570Z",
+              "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+              "attempt": 8,
+              "run_attempt": 3,
+              "outcome": "failed",
+              "error": "Waiting for selector `#user_email` failed: Waiting failed: 30000ms exceeded"
+            },
+            {
+              "at": "2026-07-20T14:55:55.581Z",
+              "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+              "attempt": 9,
+              "run_attempt": 4,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T14:56:27.630Z",
+              "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+              "attempt": 9,
+              "run_attempt": 4,
+              "outcome": "failed",
+              "error": "Waiting for selector `#user_email` failed: Waiting failed: 30000ms exceeded"
+            },
+            {
+              "at": "2026-07-20T14:56:39.644Z",
+              "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+              "attempt": 10,
+              "run_attempt": 5,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T14:56:52.135Z",
+              "run_id": "ae17aaeb-6ca7-4adc-ba21-743c9f174cfd",
+              "attempt": 10,
+              "run_attempt": 5,
+              "outcome": "failed",
+              "error": "/agreeTeam üyelik isteği başarısız: HTTP 400, kod=bilinmeyen-kod, mesaj=Sunucu ayrıntı vermedi. [sid=var, ud=var, roleid=var, teamud=var, rol_adayı=0, mouse_tıklama=1, content-type=application/json, status-text=yok]"
+            },
+            {
+              "at": "2026-07-20T15:04:53.910Z",
+              "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+              "attempt": 11,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:05:03.617Z",
+              "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+              "attempt": 11,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "\"Kabul Et\" öğesi bulundu ancak takım daveti görünür değil."
+            },
+            {
+              "at": "2026-07-20T15:05:06.627Z",
+              "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+              "attempt": 12,
+              "run_attempt": 2,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:05:16.718Z",
+              "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+              "attempt": 12,
+              "run_attempt": 2,
+              "outcome": "failed",
+              "error": "\"Kabul Et\" öğesi bulundu ancak takım daveti görünür değil."
+            },
+            {
+              "at": "2026-07-20T15:05:22.737Z",
+              "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+              "attempt": 13,
+              "run_attempt": 3,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:05:32.175Z",
+              "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+              "attempt": 13,
+              "run_attempt": 3,
+              "outcome": "failed",
+              "error": "Waiting for selector `#user_email` failed: Protocol error (Runtime.callFunctionOn): Target closed"
+            },
+            {
+              "at": "2026-07-20T15:05:41.192Z",
+              "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+              "attempt": 14,
+              "run_attempt": 4,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:05:45.029Z",
+              "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+              "attempt": 14,
+              "run_attempt": 4,
+              "outcome": "failed",
+              "error": "Waiting for selector `#user_email` failed: Protocol error (Runtime.callFunctionOn): Target closed"
+            },
+            {
+              "at": "2026-07-20T15:05:57.045Z",
+              "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+              "attempt": 15,
+              "run_attempt": 5,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:06:00.426Z",
+              "run_id": "b423ccec-66a8-43f8-b274-3a2b263e4850",
+              "attempt": 15,
+              "run_attempt": 5,
+              "outcome": "failed",
+              "error": "Waiting for selector `#user_email` failed: Protocol error (Runtime.callFunctionOn): Target closed"
+            },
+            {
+              "at": "2026-07-20T15:12:12.585Z",
+              "run_id": "d213b97e-3c39-4aa9-9451-7d0fc8314083",
+              "attempt": 16,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:12:25.792Z",
+              "run_id": "d213b97e-3c39-4aa9-9451-7d0fc8314083",
+              "attempt": 16,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "\"Kabul Et\" paneli görünür değil ve beklenen takım doğrulanamadı. Görünen kadro=Q4UONT7TTSLA, kivilcim, SND28SIIPRFW; uyarılar=Küçük Takım Daveti Bir takıma katıldınız, tekrar daveti kabul edemezsiniz. Onayla | Ödül Kodum Dikkat: Tüm ödül kodu, olay sona erdikten 5 gün sonra otomatik olarak silinir, zamanında kullanınız. Paylaşma Ödülü Davet Ödülü Takım Ödülü Ödeme Ödülü Sunucu Tür Ödül Kodu Tarih Sunucu Tür Ödül Kodu Tarih Sunucu Tür Ödül Kodu Tarih Sunucu Tür Ödül Kodu Tarih."
+            },
+            {
+              "at": "2026-07-20T15:14:56.364Z",
+              "run_id": "33c67cec-298a-4805-89ce-f0777aff9975",
+              "attempt": 17,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:15:08.361Z",
+              "run_id": "33c67cec-298a-4805-89ce-f0777aff9975",
+              "attempt": 17,
+              "outcome": "membership_confirmed",
+              "role_name": "Q4UONT7TTSLA",
+              "join_mode": "already_in_expected_team"
+            },
+            {
+              "at": "2026-07-20T15:18:29.532Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 18,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:18:41.382Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 18,
+              "outcome": "membership_confirmed",
+              "role_name": "Q4UONT7TTSLA",
+              "join_mode": "already_in_expected_team"
+            }
+          ]
+        },
+        {
+          "position": 4,
+          "group_role": "member",
+          "account_index": 4,
+          "email": "hadestxz4@outlook.com",
+          "nickname_from_verified_accounts": "RUBYIM9Z6Y3Z",
+          "account_creation_verified_at": "2026-07-20T16:08:06+03:00",
+          "account_creation_verification": {
+            "email_progress_key": "hadestxz4@outlook.com",
+            "manual_user_confirmation": true
+          },
+          "source_account_verified": true,
+          "grouping_status": "membership_confirmed",
+          "actual_role_name": "RUBYIM9Z6Y3Z",
+          "grouping_attempt_count": 2,
+          "last_attempt_at": "2026-07-20T15:18:41.388Z",
+          "confirmed_at": "2026-07-20T15:19:12.324Z",
+          "last_error": null,
+          "evidence": {
+            "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+            "role_matches_verified_nickname": true,
+            "already_member_before_request": false,
+            "join_mode": "controlled_physical_mouse_agree_team_success",
+            "role_name_source": "completed_accounts.json",
+            "event_registration": {
+              "required": true,
+              "verified": true,
+              "endpoint": "/binding",
+              "server_id": "1411",
+              "role_id": "355070245110967",
+              "role_name": "RUBYIM9Z6Y3Z",
+              "http_status": 200,
+              "response_status": "success"
+            },
+            "api": {
+              "endpoint": "/agreeTeam",
+              "method": "POST",
+              "response_observed": true,
+              "request_payload_fields_verified": [
+                "user_id",
+                "um",
+                "teamuid"
+              ],
+              "http_status": 200,
+              "response_status": "success",
+              "error_code": null,
+              "controlled_request_attempts": 2,
+              "panel_kept_open_until_server_verification": true
+            },
+            "server": {
+              "expected_leader_role": "Kivilcim",
+              "expected_member_role": "RUBYIM9Z6Y3Z",
+              "roster": [
+                "RUBYIM9Z6Y3Z",
+                "kivilcim",
+                "SND28SIIPRFW",
+                "Q4UONT7TTSLA"
+              ],
+              "membership_match": true
+            },
+            "invitation_ui": {
+              "dismissed_immediately": false,
+              "dismissed_only_after_server_verification": true,
+              "physical_mouse_click_count": 1,
+              "devtools_reflow_simulated": true,
+              "site_navigation_observed": false,
+              "persistent_closed_checks": 2,
+              "persistent_closed": true
+            },
+            "browser_flow": {
+              "private_browser_context": true,
+              "login_tab": "first_tab",
+              "invitation_tab": "second_tab",
+              "leader_link_source": "in_memory_from_group_leader",
+              "same_private_context_for_member_tabs": true
+            }
+          },
+          "attempt_history": [
+            {
+              "at": "2026-07-20T15:15:08.368Z",
+              "run_id": "33c67cec-298a-4805-89ce-f0777aff9975",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:16:23.507Z",
+              "run_id": "33c67cec-298a-4805-89ce-f0777aff9975",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "/agreeTeam üyeliği aynı oturumda 5 denemede doğrulanamadı: HTTP 400, kod=ERR901, mesaj={\"status\":\"error\",\"exception\":\"user is null\",\"err_code\":\"ERR901\"} [sid=var, ud=yok, roleid=var, teamud=var, rol_adayı=5, mouse_tıklama=1, content-type=application/json, status-text=yok, panel_yanıt_süresince_açık=true]"
+            },
+            {
+              "at": "2026-07-20T15:18:41.388Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 2,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:19:12.324Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 2,
+              "outcome": "membership_confirmed",
+              "role_name": "RUBYIM9Z6Y3Z",
+              "join_mode": "controlled_physical_mouse_agree_team_success"
+            }
+          ]
+        }
+      ]
+    },
+    "2": {
+      "group_number": 2,
+      "account_range": {
+        "first": 5,
+        "last": 8
+      },
+      "leader_position": 1,
+      "leader_account_index": 5,
+      "status": "confirmed",
+      "confirmed_at": "2026-07-20T15:23:57.185Z",
+      "created_at": "2026-07-20T14:36:59.669Z",
+      "updated_at": "2026-07-20T15:57:53.559Z",
+      "invite": {
+        "generated_at": "2026-07-20T15:20:35.873Z",
+        "generated_by_position": 1,
+        "generated_by_account_index": 5,
+        "generated_by_email": "hadestxz5@outlook.com",
+        "invitation_type": "team",
+        "endpoint_origin": "https://newserver79-lotr.oasgames.com",
+        "query_fields": [
+          "sid",
+          "ud",
+          "type",
+          "shareuid",
+          "um"
+        ],
+        "full_url_stored": false,
+        "url_sha256": "e409729d7aaed453b14859e4ac5d1b874ec1c447c6af80108e638e7f5401eb23",
+        "runtime_lifetime": "memory_only_until_current_group_finishes",
+        "server_id": "1411"
+      },
+      "verification": {
+        "expected_member_count": 4,
+        "confirmed_member_count": 4,
+        "confirmed_positions": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "all_members_confirmed": true,
+        "last_server_roster": [
+          "K5HXZZJKPLMD",
+          "VU5C9U4F1B2G",
+          "517YHUF3APF6",
+          "IQSSW3DEBVAK"
+        ],
+        "last_checked_at": "2026-07-20T15:23:57.185Z"
+      },
+      "event_history": [
+        {
+          "at": "2026-07-20T15:19:12.335Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "group_processing_started",
+          "requested_start_position": 1,
+          "actual_member_start_position": 2
+        },
+        {
+          "at": "2026-07-20T15:19:12.339Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 5,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:19:43.827Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_failed",
+          "position": 1,
+          "account_index": 5,
+          "run_attempt": 1,
+          "error": "Waiting for selector `#user_email` failed: Waiting failed: 30000ms exceeded"
+        },
+        {
+          "at": "2026-07-20T15:19:46.836Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 5,
+          "run_attempt": 2
+        },
+        {
+          "at": "2026-07-20T15:20:18.300Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_failed",
+          "position": 1,
+          "account_index": 5,
+          "run_attempt": 2,
+          "error": "Waiting for selector `#user_email` failed: Waiting failed: 30000ms exceeded"
+        },
+        {
+          "at": "2026-07-20T15:20:24.316Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 5,
+          "run_attempt": 3
+        },
+        {
+          "at": "2026-07-20T15:20:35.873Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "leader_invite_generated",
+          "account_index": 5,
+          "role_name": "VU5C9U4F1B2G",
+          "invite_url_sha256": "e409729d7aaed453b14859e4ac5d1b874ec1c447c6af80108e638e7f5401eb23"
+        },
+        {
+          "at": "2026-07-20T15:20:35.883Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 2,
+          "account_index": 6,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:20:58.909Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "member_membership_confirmed",
+          "position": 2,
+          "account_index": 6,
+          "role_name": "517YHUF3APF6",
+          "join_mode": "controlled_physical_mouse_agree_team_success",
+          "invitation_closed_checks": 2,
+          "server_roster": [
+            "517YHUF3APF6",
+            "VU5C9U4F1B2G"
+          ]
+        },
+        {
+          "at": "2026-07-20T15:20:58.916Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 7,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:21:48.241Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 7,
+          "run_attempt": 1,
+          "error": "Gerçek giriş düğmesine basıldı ancak oas_user oturumu oluşmadı."
+        },
+        {
+          "at": "2026-07-20T15:21:51.252Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 7,
+          "run_attempt": 2
+        },
+        {
+          "at": "2026-07-20T15:22:40.241Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 7,
+          "run_attempt": 2,
+          "error": "Gerçek giriş düğmesine basıldı ancak oas_user oturumu oluşmadı."
+        },
+        {
+          "at": "2026-07-20T15:22:46.250Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 7,
+          "run_attempt": 3
+        },
+        {
+          "at": "2026-07-20T15:23:17.267Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "member_membership_confirmed",
+          "position": 3,
+          "account_index": 7,
+          "role_name": "IQSSW3DEBVAK",
+          "join_mode": "controlled_physical_mouse_agree_team_success",
+          "invitation_closed_checks": 2,
+          "server_roster": [
+            "IQSSW3DEBVAK",
+            "VU5C9U4F1B2G",
+            "517YHUF3APF6"
+          ]
+        },
+        {
+          "at": "2026-07-20T15:23:17.273Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 4,
+          "account_index": 8,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:23:57.185Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "member_membership_confirmed",
+          "position": 4,
+          "account_index": 8,
+          "role_name": "K5HXZZJKPLMD",
+          "join_mode": "controlled_physical_mouse_agree_team_success",
+          "invitation_closed_checks": 2,
+          "server_roster": [
+            "K5HXZZJKPLMD",
+            "VU5C9U4F1B2G",
+            "517YHUF3APF6",
+            "IQSSW3DEBVAK"
+          ]
+        },
+        {
+          "at": "2026-07-20T15:23:57.191Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "group_processing_finished",
+          "final_status": "confirmed",
+          "confirmed_positions": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "at": "2026-07-20T15:23:57.191Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "leader_invite_removed_from_runtime_memory"
+        }
+      ],
+      "accounts": [
+        {
+          "position": 1,
+          "group_role": "leader",
+          "account_index": 5,
+          "email": "hadestxz5@outlook.com",
+          "nickname_from_verified_accounts": "VU5C9U4F1B2G",
+          "account_creation_verified_at": "2026-07-20T16:08:06+03:00",
+          "account_creation_verification": {
+            "email_progress_key": "hadestxz5@outlook.com",
+            "manual_user_confirmation": true
+          },
+          "source_account_verified": true,
+          "grouping_status": "leader_confirmed",
+          "actual_role_name": "VU5C9U4F1B2G",
+          "grouping_attempt_count": 3,
+          "last_attempt_at": "2026-07-20T15:20:24.315Z",
+          "confirmed_at": "2026-07-20T15:20:35.873Z",
+          "last_error": null,
+          "evidence": {
+            "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+            "role_matches_verified_nickname": true,
+            "role_name_source": "binding_or_completed_accounts",
+            "role_binding_verified": true,
+            "server_id": "1411",
+            "role_id": "369991034605741",
+            "initial_server_roster": [
+              "VU5C9U4F1B2G"
+            ],
+            "invite_link": {
+              "full_url_stored": false,
+              "reason": "um ve kullanıcı kimliği içeren davet URLsi güvenlik için saklanmaz.",
+              "sha256": "e409729d7aaed453b14859e4ac5d1b874ec1c447c6af80108e638e7f5401eb23",
+              "runtime_lifetime": "memory_only_until_current_group_finishes"
+            }
+          },
+          "attempt_history": [
+            {
+              "at": "2026-07-20T15:19:12.339Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:19:43.827Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "Waiting for selector `#user_email` failed: Waiting failed: 30000ms exceeded"
+            },
+            {
+              "at": "2026-07-20T15:19:46.836Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 2,
+              "run_attempt": 2,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:20:18.300Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 2,
+              "run_attempt": 2,
+              "outcome": "failed",
+              "error": "Waiting for selector `#user_email` failed: Waiting failed: 30000ms exceeded"
+            },
+            {
+              "at": "2026-07-20T15:20:24.316Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 3,
+              "run_attempt": 3,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:20:35.873Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 3,
+              "outcome": "leader_confirmed",
+              "role_name": "VU5C9U4F1B2G"
+            }
+          ]
+        },
+        {
+          "position": 2,
+          "group_role": "member",
+          "account_index": 6,
+          "email": "hadestxz6@outlook.com",
+          "nickname_from_verified_accounts": "517YHUF3APF6",
+          "account_creation_verified_at": "2026-07-20T16:09:38+03:00",
+          "account_creation_verification": {
+            "email_progress_key": "hadestxz6@outlook.com",
+            "two_blue_loading_bars": true
+          },
+          "source_account_verified": true,
+          "grouping_status": "membership_confirmed",
+          "actual_role_name": "517YHUF3APF6",
+          "grouping_attempt_count": 1,
+          "last_attempt_at": "2026-07-20T15:20:35.883Z",
+          "confirmed_at": "2026-07-20T15:20:58.909Z",
+          "last_error": null,
+          "evidence": {
+            "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+            "role_matches_verified_nickname": true,
+            "already_member_before_request": false,
+            "join_mode": "controlled_physical_mouse_agree_team_success",
+            "role_name_source": "completed_accounts.json",
+            "event_registration": {
+              "required": true,
+              "verified": true,
+              "endpoint": "/binding",
+              "server_id": "1411",
+              "role_id": "304882918853429",
+              "role_name": "517YHUF3APF6",
+              "http_status": 200,
+              "response_status": "success"
+            },
+            "api": {
+              "endpoint": "/agreeTeam",
+              "method": "POST",
+              "response_observed": true,
+              "request_payload_fields_verified": [
+                "user_id",
+                "um",
+                "teamuid"
+              ],
+              "http_status": 200,
+              "response_status": "success",
+              "error_code": null,
+              "controlled_request_attempts": 1,
+              "panel_kept_open_until_server_verification": true
+            },
+            "server": {
+              "expected_leader_role": "VU5C9U4F1B2G",
+              "expected_member_role": "517YHUF3APF6",
+              "roster": [
+                "517YHUF3APF6",
+                "VU5C9U4F1B2G"
+              ],
+              "membership_match": true
+            },
+            "invitation_ui": {
+              "dismissed_immediately": false,
+              "dismissed_only_after_server_verification": true,
+              "physical_mouse_click_count": 1,
+              "devtools_reflow_simulated": true,
+              "site_navigation_observed": false,
+              "persistent_closed_checks": 2,
+              "persistent_closed": true
+            },
+            "browser_flow": {
+              "private_browser_context": true,
+              "login_tab": "first_tab",
+              "invitation_tab": "second_tab",
+              "leader_link_source": "in_memory_from_group_leader",
+              "same_private_context_for_member_tabs": true
+            }
+          },
+          "attempt_history": [
+            {
+              "at": "2026-07-20T15:20:35.883Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:20:58.909Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 1,
+              "outcome": "membership_confirmed",
+              "role_name": "517YHUF3APF6",
+              "join_mode": "controlled_physical_mouse_agree_team_success"
+            }
+          ]
+        },
+        {
+          "position": 3,
+          "group_role": "member",
+          "account_index": 7,
+          "email": "hadestxz7@outlook.com",
+          "nickname_from_verified_accounts": "IQSSW3DEBVAK",
+          "account_creation_verified_at": "2026-07-20T16:14:11+03:00",
+          "account_creation_verification": {
+            "email_progress_key": "hadestxz7@outlook.com",
+            "two_blue_loading_bars": true
+          },
+          "source_account_verified": true,
+          "grouping_status": "membership_confirmed",
+          "actual_role_name": "IQSSW3DEBVAK",
+          "grouping_attempt_count": 3,
+          "last_attempt_at": "2026-07-20T15:22:46.250Z",
+          "confirmed_at": "2026-07-20T15:23:17.267Z",
+          "last_error": null,
+          "evidence": {
+            "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+            "role_matches_verified_nickname": true,
+            "already_member_before_request": false,
+            "join_mode": "controlled_physical_mouse_agree_team_success",
+            "role_name_source": "completed_accounts.json",
+            "event_registration": {
+              "required": true,
+              "verified": true,
+              "endpoint": "/binding",
+              "server_id": "1411",
+              "role_id": "340549032628314",
+              "role_name": "IQSSW3DEBVAK",
+              "http_status": 200,
+              "response_status": "success"
+            },
+            "api": {
+              "endpoint": "/agreeTeam",
+              "method": "POST",
+              "response_observed": true,
+              "request_payload_fields_verified": [
+                "user_id",
+                "um",
+                "teamuid"
+              ],
+              "http_status": 200,
+              "response_status": "success",
+              "error_code": null,
+              "controlled_request_attempts": 2,
+              "panel_kept_open_until_server_verification": true
+            },
+            "server": {
+              "expected_leader_role": "VU5C9U4F1B2G",
+              "expected_member_role": "IQSSW3DEBVAK",
+              "roster": [
+                "IQSSW3DEBVAK",
+                "VU5C9U4F1B2G",
+                "517YHUF3APF6"
+              ],
+              "membership_match": true
+            },
+            "invitation_ui": {
+              "dismissed_immediately": false,
+              "dismissed_only_after_server_verification": true,
+              "physical_mouse_click_count": 1,
+              "devtools_reflow_simulated": true,
+              "site_navigation_observed": false,
+              "persistent_closed_checks": 2,
+              "persistent_closed": true
+            },
+            "browser_flow": {
+              "private_browser_context": true,
+              "login_tab": "first_tab",
+              "invitation_tab": "second_tab",
+              "leader_link_source": "in_memory_from_group_leader",
+              "same_private_context_for_member_tabs": true
+            }
+          },
+          "attempt_history": [
+            {
+              "at": "2026-07-20T15:20:58.916Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:21:48.241Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "Gerçek giriş düğmesine basıldı ancak oas_user oturumu oluşmadı."
+            },
+            {
+              "at": "2026-07-20T15:21:51.252Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 2,
+              "run_attempt": 2,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:22:40.241Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 2,
+              "run_attempt": 2,
+              "outcome": "failed",
+              "error": "Gerçek giriş düğmesine basıldı ancak oas_user oturumu oluşmadı."
+            },
+            {
+              "at": "2026-07-20T15:22:46.250Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 3,
+              "run_attempt": 3,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:23:17.267Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 3,
+              "outcome": "membership_confirmed",
+              "role_name": "IQSSW3DEBVAK",
+              "join_mode": "controlled_physical_mouse_agree_team_success"
+            }
+          ]
+        },
+        {
+          "position": 4,
+          "group_role": "member",
+          "account_index": 8,
+          "email": "hadestxz8@outlook.com",
+          "nickname_from_verified_accounts": "K5HXZZJKPLMD",
+          "account_creation_verified_at": "2026-07-20T16:15:19+03:00",
+          "account_creation_verification": {
+            "email_progress_key": "hadestxz8@outlook.com",
+            "two_blue_loading_bars": true
+          },
+          "source_account_verified": true,
+          "grouping_status": "membership_confirmed",
+          "actual_role_name": "K5HXZZJKPLMD",
+          "grouping_attempt_count": 1,
+          "last_attempt_at": "2026-07-20T15:23:17.273Z",
+          "confirmed_at": "2026-07-20T15:23:57.185Z",
+          "last_error": null,
+          "evidence": {
+            "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+            "role_matches_verified_nickname": true,
+            "already_member_before_request": false,
+            "join_mode": "controlled_physical_mouse_agree_team_success",
+            "role_name_source": "completed_accounts.json",
+            "event_registration": {
+              "required": true,
+              "verified": true,
+              "endpoint": "/binding",
+              "server_id": "1411",
+              "role_id": "306333804156387",
+              "role_name": "K5HXZZJKPLMD",
+              "http_status": 200,
+              "response_status": "success"
+            },
+            "api": {
+              "endpoint": "/agreeTeam",
+              "method": "POST",
+              "response_observed": true,
+              "request_payload_fields_verified": [
+                "user_id",
+                "um",
+                "teamuid"
+              ],
+              "http_status": 200,
+              "response_status": "success",
+              "error_code": null,
+              "controlled_request_attempts": 3,
+              "panel_kept_open_until_server_verification": true
+            },
+            "server": {
+              "expected_leader_role": "VU5C9U4F1B2G",
+              "expected_member_role": "K5HXZZJKPLMD",
+              "roster": [
+                "K5HXZZJKPLMD",
+                "VU5C9U4F1B2G",
+                "517YHUF3APF6",
+                "IQSSW3DEBVAK"
+              ],
+              "membership_match": true
+            },
+            "invitation_ui": {
+              "dismissed_immediately": false,
+              "dismissed_only_after_server_verification": true,
+              "physical_mouse_click_count": 1,
+              "devtools_reflow_simulated": true,
+              "site_navigation_observed": false,
+              "persistent_closed_checks": 2,
+              "persistent_closed": true
+            },
+            "browser_flow": {
+              "private_browser_context": true,
+              "login_tab": "first_tab",
+              "invitation_tab": "second_tab",
+              "leader_link_source": "in_memory_from_group_leader",
+              "same_private_context_for_member_tabs": true
+            }
+          },
+          "attempt_history": [
+            {
+              "at": "2026-07-20T15:23:17.273Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:23:57.185Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 1,
+              "outcome": "membership_confirmed",
+              "role_name": "K5HXZZJKPLMD",
+              "join_mode": "controlled_physical_mouse_agree_team_success"
+            }
+          ]
+        }
+      ]
+    },
+    "3": {
+      "group_number": 3,
+      "account_range": {
+        "first": 9,
+        "last": 12
+      },
+      "leader_position": 1,
+      "leader_account_index": 9,
+      "status": "confirmed",
+      "confirmed_at": "2026-07-20T15:41:21.155Z",
+      "created_at": "2026-07-20T14:36:59.669Z",
+      "updated_at": "2026-07-20T15:57:53.559Z",
+      "invite": {
+        "generated_at": "2026-07-20T15:44:45.761Z",
+        "generated_by_position": 1,
+        "generated_by_account_index": 9,
+        "generated_by_email": "hadestxz9@outlook.com",
+        "invitation_type": "team",
+        "endpoint_origin": "https://newserver79-lotr.oasgames.com",
+        "query_fields": [
+          "sid",
+          "ud",
+          "type",
+          "shareuid",
+          "um"
+        ],
+        "full_url_stored": false,
+        "url_sha256": "13d369d99f740fde85eb79f6a2294d8d9fe013c2e5b3c9f31ee3957c1cd183e4",
+        "runtime_lifetime": "memory_only_until_current_group_finishes",
+        "server_id": "1411"
+      },
+      "verification": {
+        "expected_member_count": 4,
+        "confirmed_member_count": 4,
+        "confirmed_positions": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "all_members_confirmed": true,
+        "last_server_roster": [
+          "ZLGW9AKVGZTK",
+          "O7FDNT1ZDLBU",
+          "YZU4MIGTK73M",
+          "HYL37ZA15MHZ"
+        ],
+        "last_checked_at": "2026-07-20T15:48:18.492Z"
+      },
+      "event_history": [
+        {
+          "at": "2026-07-20T15:23:57.196Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "group_processing_started",
+          "requested_start_position": 1,
+          "actual_member_start_position": 2
+        },
+        {
+          "at": "2026-07-20T15:23:57.200Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 9,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:24:28.666Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_failed",
+          "position": 1,
+          "account_index": 9,
+          "run_attempt": 1,
+          "error": "Waiting for selector `#user_email` failed: Waiting failed: 30000ms exceeded"
+        },
+        {
+          "at": "2026-07-20T15:24:31.679Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 9,
+          "run_attempt": 2
+        },
+        {
+          "at": "2026-07-20T15:25:20.040Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "leader_invite_generated",
+          "account_index": 9,
+          "role_name": "O7FDNT1ZDLBU",
+          "invite_url_sha256": "13d369d99f740fde85eb79f6a2294d8d9fe013c2e5b3c9f31ee3957c1cd183e4"
+        },
+        {
+          "at": "2026-07-20T15:25:20.046Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 2,
+          "account_index": 10,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:25:43.024Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_failed",
+          "position": 2,
+          "account_index": 10,
+          "run_attempt": 1,
+          "error": "Davet ekranı kontrolü 1/2 sırasında takım üyeliği kayboldu. Görünen üyeler: yok."
+        },
+        {
+          "at": "2026-07-20T15:25:46.042Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 2,
+          "account_index": 10,
+          "run_attempt": 2
+        },
+        {
+          "at": "2026-07-20T15:25:53.395Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_failed",
+          "position": 2,
+          "account_index": 10,
+          "run_attempt": 2,
+          "error": "Waiting for selector `#user_email` failed: Protocol error (Runtime.callFunctionOn): Target closed"
+        },
+        {
+          "at": "2026-07-20T15:25:59.411Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 2,
+          "account_index": 10,
+          "run_attempt": 3
+        },
+        {
+          "at": "2026-07-20T15:25:59.417Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_failed",
+          "position": 2,
+          "account_index": 10,
+          "run_attempt": 3,
+          "error": "Protocol error: Connection closed."
+        },
+        {
+          "at": "2026-07-20T15:26:08.425Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 2,
+          "account_index": 10,
+          "run_attempt": 4
+        },
+        {
+          "at": "2026-07-20T15:26:08.433Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_failed",
+          "position": 2,
+          "account_index": 10,
+          "run_attempt": 4,
+          "error": "Protocol error: Connection closed."
+        },
+        {
+          "at": "2026-07-20T15:26:20.437Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_started",
+          "position": 2,
+          "account_index": 10,
+          "run_attempt": 5
+        },
+        {
+          "at": "2026-07-20T15:26:20.440Z",
+          "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+          "type": "account_attempt_failed",
+          "position": 2,
+          "account_index": 10,
+          "run_attempt": 5,
+          "error": "Protocol error: Connection closed."
+        },
+        {
+          "at": "2026-07-20T15:32:14.990Z",
+          "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+          "type": "group_processing_started",
+          "requested_start_position": 2,
+          "actual_member_start_position": 2
+        },
+        {
+          "at": "2026-07-20T15:32:14.997Z",
+          "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 9,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:32:32.368Z",
+          "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+          "type": "leader_invite_generated",
+          "account_index": 9,
+          "role_name": "O7FDNT1ZDLBU",
+          "invite_url_sha256": "13d369d99f740fde85eb79f6a2294d8d9fe013c2e5b3c9f31ee3957c1cd183e4"
+        },
+        {
+          "at": "2026-07-20T15:32:32.368Z",
+          "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+          "type": "accounts_reconciled_from_server_roster",
+          "positions": [
+            2
+          ],
+          "roster": [
+            "O7FDNT1ZDLBU",
+            "YZU4MIGTK73M"
+          ]
+        },
+        {
+          "at": "2026-07-20T15:33:32.391Z",
+          "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+          "type": "account_attempt_started",
+          "position": 2,
+          "account_index": 10,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:34:18.959Z",
+          "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+          "type": "member_membership_confirmed",
+          "position": 2,
+          "account_index": 10,
+          "role_name": "YZU4MIGTK73M",
+          "join_mode": "already_in_expected_team",
+          "invitation_closed_checks": 2,
+          "server_roster": [
+            "YZU4MIGTK73M",
+            "O7FDNT1ZDLBU"
+          ]
+        },
+        {
+          "at": "2026-07-20T15:35:18.973Z",
+          "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 11,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:37:05.223Z",
+          "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+          "type": "member_membership_confirmed",
+          "position": 3,
+          "account_index": 11,
+          "role_name": "HYL37ZA15MHZ",
+          "join_mode": "controlled_physical_mouse_agree_team_success",
+          "invitation_closed_checks": 2,
+          "server_roster": [
+            "HYL37ZA15MHZ",
+            "O7FDNT1ZDLBU",
+            "YZU4MIGTK73M"
+          ]
+        },
+        {
+          "at": "2026-07-20T15:38:05.244Z",
+          "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+          "type": "account_attempt_started",
+          "position": 4,
+          "account_index": 12,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:41:21.155Z",
+          "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+          "type": "member_membership_confirmed",
+          "position": 4,
+          "account_index": 12,
+          "role_name": "ZLGW9AKVGZTK",
+          "join_mode": "controlled_physical_mouse_agree_team_success",
+          "invitation_closed_checks": 2,
+          "server_roster": [
+            "ZLGW9AKVGZTK",
+            "O7FDNT1ZDLBU",
+            "YZU4MIGTK73M",
+            "HYL37ZA15MHZ"
+          ]
+        },
+        {
+          "at": "2026-07-20T15:42:21.177Z",
+          "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+          "type": "group_processing_finished",
+          "final_status": "confirmed",
+          "confirmed_positions": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "at": "2026-07-20T15:42:21.177Z",
+          "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+          "type": "leader_invite_removed_from_runtime_memory"
+        },
+        {
+          "at": "2026-07-20T15:44:28.235Z",
+          "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+          "type": "group_processing_started",
+          "requested_start_position": 3,
+          "actual_member_start_position": 3
+        },
+        {
+          "at": "2026-07-20T15:44:28.242Z",
+          "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 9,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:44:45.761Z",
+          "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+          "type": "leader_invite_generated",
+          "account_index": 9,
+          "role_name": "O7FDNT1ZDLBU",
+          "invite_url_sha256": "13d369d99f740fde85eb79f6a2294d8d9fe013c2e5b3c9f31ee3957c1cd183e4"
+        },
+        {
+          "at": "2026-07-20T15:45:45.781Z",
+          "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 11,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:46:32.190Z",
+          "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+          "type": "member_membership_confirmed",
+          "position": 3,
+          "account_index": 11,
+          "role_name": "HYL37ZA15MHZ",
+          "join_mode": "already_in_expected_team",
+          "invitation_closed_checks": 2,
+          "server_roster": [
+            "HYL37ZA15MHZ",
+            "O7FDNT1ZDLBU",
+            "YZU4MIGTK73M",
+            "ZLGW9AKVGZTK"
+          ]
+        },
+        {
+          "at": "2026-07-20T15:47:32.200Z",
+          "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+          "type": "account_attempt_started",
+          "position": 4,
+          "account_index": 12,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:48:18.492Z",
+          "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+          "type": "member_membership_confirmed",
+          "position": 4,
+          "account_index": 12,
+          "role_name": "ZLGW9AKVGZTK",
+          "join_mode": "already_in_expected_team",
+          "invitation_closed_checks": 2,
+          "server_roster": [
+            "ZLGW9AKVGZTK",
+            "O7FDNT1ZDLBU",
+            "YZU4MIGTK73M",
+            "HYL37ZA15MHZ"
+          ]
+        },
+        {
+          "at": "2026-07-20T15:49:18.513Z",
+          "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+          "type": "group_processing_finished",
+          "final_status": "confirmed",
+          "confirmed_positions": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "at": "2026-07-20T15:49:18.513Z",
+          "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+          "type": "leader_invite_removed_from_runtime_memory"
+        }
+      ],
+      "accounts": [
+        {
+          "position": 1,
+          "group_role": "leader",
+          "account_index": 9,
+          "email": "hadestxz9@outlook.com",
+          "nickname_from_verified_accounts": "O7FDNT1ZDLBU",
+          "account_creation_verified_at": "2026-07-20T16:16:31+03:00",
+          "account_creation_verification": {
+            "email_progress_key": "hadestxz9@outlook.com",
+            "two_blue_loading_bars": true
+          },
+          "source_account_verified": true,
+          "grouping_status": "leader_confirmed",
+          "actual_role_name": "O7FDNT1ZDLBU",
+          "grouping_attempt_count": 4,
+          "last_attempt_at": "2026-07-20T15:44:28.242Z",
+          "confirmed_at": "2026-07-20T15:44:45.761Z",
+          "last_error": null,
+          "evidence": {
+            "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+            "role_matches_verified_nickname": true,
+            "role_name_source": "completed_accounts.json",
+            "role_binding_verified": true,
+            "server_id": "1411",
+            "role_id": "347750007796688",
+            "initial_server_roster": [
+              "O7FDNT1ZDLBU",
+              "YZU4MIGTK73M",
+              "HYL37ZA15MHZ",
+              "ZLGW9AKVGZTK"
+            ],
+            "invite_link": {
+              "full_url_stored": false,
+              "reason": "um ve kullanıcı kimliği içeren davet URLsi güvenlik için saklanmaz.",
+              "sha256": "13d369d99f740fde85eb79f6a2294d8d9fe013c2e5b3c9f31ee3957c1cd183e4",
+              "runtime_lifetime": "memory_only_until_current_group_finishes"
+            }
+          },
+          "attempt_history": [
+            {
+              "at": "2026-07-20T15:23:57.200Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:24:28.666Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "Waiting for selector `#user_email` failed: Waiting failed: 30000ms exceeded"
+            },
+            {
+              "at": "2026-07-20T15:24:31.679Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 2,
+              "run_attempt": 2,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:25:20.040Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 2,
+              "outcome": "leader_confirmed",
+              "role_name": "O7FDNT1ZDLBU"
+            },
+            {
+              "at": "2026-07-20T15:32:14.997Z",
+              "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+              "attempt": 3,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:32:32.368Z",
+              "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+              "attempt": 3,
+              "outcome": "leader_confirmed",
+              "role_name": "O7FDNT1ZDLBU"
+            },
+            {
+              "at": "2026-07-20T15:44:28.242Z",
+              "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+              "attempt": 4,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:44:45.761Z",
+              "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+              "attempt": 4,
+              "outcome": "leader_confirmed",
+              "role_name": "O7FDNT1ZDLBU"
+            }
+          ]
+        },
+        {
+          "position": 2,
+          "group_role": "member",
+          "account_index": 10,
+          "email": "hadestxz10@outlook.com",
+          "nickname_from_verified_accounts": "YZU4MIGTK73M",
+          "account_creation_verified_at": "2026-07-20T16:17:39+03:00",
+          "account_creation_verification": {
+            "email_progress_key": "hadestxz10@outlook.com",
+            "two_blue_loading_bars": true
+          },
+          "source_account_verified": true,
+          "grouping_status": "membership_confirmed",
+          "actual_role_name": "YZU4MIGTK73M",
+          "grouping_attempt_count": 6,
+          "last_attempt_at": "2026-07-20T15:33:32.391Z",
+          "confirmed_at": "2026-07-20T15:34:18.959Z",
+          "last_error": null,
+          "evidence": {
+            "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+            "role_matches_verified_nickname": true,
+            "already_member_before_request": true,
+            "join_mode": "already_in_expected_team",
+            "role_name_source": "completed_accounts.json",
+            "event_registration": {
+              "required": false,
+              "verified": true,
+              "reason": "Etkinlik kullanıcı kaydı zaten mevcut."
+            },
+            "api": {
+              "request_sent": false,
+              "reason": "Sunucu listesi üyeliği işlem öncesinde doğruladı."
+            },
+            "server": {
+              "expected_leader_role": "O7FDNT1ZDLBU",
+              "expected_member_role": "YZU4MIGTK73M",
+              "roster": [
+                "YZU4MIGTK73M",
+                "O7FDNT1ZDLBU"
+              ],
+              "membership_match": true
+            },
+            "invitation_ui": {
+              "dismissed_immediately": true,
+              "persistent_closed_checks": 2,
+              "persistent_closed": true
+            },
+            "browser_flow": {
+              "private_browser_context": true,
+              "login_tab": "first_tab",
+              "invitation_tab": "second_tab",
+              "leader_link_source": "in_memory_from_group_leader",
+              "same_private_context_for_member_tabs": true
+            }
+          },
+          "attempt_history": [
+            {
+              "at": "2026-07-20T15:25:20.046Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:25:43.024Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "Davet ekranı kontrolü 1/2 sırasında takım üyeliği kayboldu. Görünen üyeler: yok."
+            },
+            {
+              "at": "2026-07-20T15:25:46.042Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 2,
+              "run_attempt": 2,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:25:53.395Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 2,
+              "run_attempt": 2,
+              "outcome": "failed",
+              "error": "Waiting for selector `#user_email` failed: Protocol error (Runtime.callFunctionOn): Target closed"
+            },
+            {
+              "at": "2026-07-20T15:25:59.411Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 3,
+              "run_attempt": 3,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:25:59.417Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 3,
+              "run_attempt": 3,
+              "outcome": "failed",
+              "error": "Protocol error: Connection closed."
+            },
+            {
+              "at": "2026-07-20T15:26:08.425Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 4,
+              "run_attempt": 4,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:26:08.433Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 4,
+              "run_attempt": 4,
+              "outcome": "failed",
+              "error": "Protocol error: Connection closed."
+            },
+            {
+              "at": "2026-07-20T15:26:20.437Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 5,
+              "run_attempt": 5,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:26:20.440Z",
+              "run_id": "888f154a-0008-48ec-a035-0b0a1d99e3ac",
+              "attempt": 5,
+              "run_attempt": 5,
+              "outcome": "failed",
+              "error": "Protocol error: Connection closed."
+            },
+            {
+              "at": "2026-07-20T15:33:32.391Z",
+              "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+              "attempt": 6,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:34:18.959Z",
+              "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+              "attempt": 6,
+              "outcome": "membership_confirmed",
+              "role_name": "YZU4MIGTK73M",
+              "join_mode": "already_in_expected_team"
+            }
+          ]
+        },
+        {
+          "position": 3,
+          "group_role": "member",
+          "account_index": 11,
+          "email": "hadestxz11@outlook.com",
+          "nickname_from_verified_accounts": "HYL37ZA15MHZ",
+          "account_creation_verified_at": "2026-07-20T16:18:46+03:00",
+          "account_creation_verification": {
+            "email_progress_key": "hadestxz11@outlook.com",
+            "two_blue_loading_bars": true
+          },
+          "source_account_verified": true,
+          "grouping_status": "membership_confirmed",
+          "actual_role_name": "HYL37ZA15MHZ",
+          "grouping_attempt_count": 2,
+          "last_attempt_at": "2026-07-20T15:45:45.781Z",
+          "confirmed_at": "2026-07-20T15:46:32.190Z",
+          "last_error": null,
+          "evidence": {
+            "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+            "role_matches_verified_nickname": true,
+            "already_member_before_request": true,
+            "join_mode": "already_in_expected_team",
+            "role_name_source": "completed_accounts.json",
+            "event_registration": {
+              "required": false,
+              "verified": true,
+              "reason": "Etkinlik kullanıcı kaydı zaten mevcut."
+            },
+            "api": {
+              "request_sent": false,
+              "reason": "Sunucu listesi üyeliği işlem öncesinde doğruladı."
+            },
+            "server": {
+              "expected_leader_role": "O7FDNT1ZDLBU",
+              "expected_member_role": "HYL37ZA15MHZ",
+              "roster": [
+                "HYL37ZA15MHZ",
+                "O7FDNT1ZDLBU",
+                "YZU4MIGTK73M",
+                "ZLGW9AKVGZTK"
+              ],
+              "membership_match": true
+            },
+            "invitation_ui": {
+              "dismissed_immediately": true,
+              "persistent_closed_checks": 2,
+              "persistent_closed": true
+            },
+            "browser_flow": {
+              "private_browser_context": true,
+              "login_tab": "first_tab",
+              "invitation_tab": "second_tab",
+              "leader_link_source": "in_memory_from_group_leader",
+              "same_private_context_for_member_tabs": true
+            }
+          },
+          "attempt_history": [
+            {
+              "at": "2026-07-20T15:35:18.973Z",
+              "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:37:05.223Z",
+              "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+              "attempt": 1,
+              "outcome": "membership_confirmed",
+              "role_name": "HYL37ZA15MHZ",
+              "join_mode": "controlled_physical_mouse_agree_team_success"
+            },
+            {
+              "at": "2026-07-20T15:45:45.781Z",
+              "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+              "attempt": 2,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:46:32.190Z",
+              "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+              "attempt": 2,
+              "outcome": "membership_confirmed",
+              "role_name": "HYL37ZA15MHZ",
+              "join_mode": "already_in_expected_team"
+            }
+          ]
+        },
+        {
+          "position": 4,
+          "group_role": "member",
+          "account_index": 12,
+          "email": "hadestxz12@outlook.com",
+          "nickname_from_verified_accounts": "ZLGW9AKVGZTK",
+          "account_creation_verified_at": "2026-07-20T16:19:53+03:00",
+          "account_creation_verification": {
+            "email_progress_key": "hadestxz12@outlook.com",
+            "two_blue_loading_bars": true
+          },
+          "source_account_verified": true,
+          "grouping_status": "membership_confirmed",
+          "actual_role_name": "ZLGW9AKVGZTK",
+          "grouping_attempt_count": 2,
+          "last_attempt_at": "2026-07-20T15:47:32.200Z",
+          "confirmed_at": "2026-07-20T15:48:18.492Z",
+          "last_error": null,
+          "evidence": {
+            "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+            "role_matches_verified_nickname": true,
+            "already_member_before_request": true,
+            "join_mode": "already_in_expected_team",
+            "role_name_source": "completed_accounts.json",
+            "event_registration": {
+              "required": false,
+              "verified": true,
+              "reason": "Etkinlik kullanıcı kaydı zaten mevcut."
+            },
+            "api": {
+              "request_sent": false,
+              "reason": "Sunucu listesi üyeliği işlem öncesinde doğruladı."
+            },
+            "server": {
+              "expected_leader_role": "O7FDNT1ZDLBU",
+              "expected_member_role": "ZLGW9AKVGZTK",
+              "roster": [
+                "ZLGW9AKVGZTK",
+                "O7FDNT1ZDLBU",
+                "YZU4MIGTK73M",
+                "HYL37ZA15MHZ"
+              ],
+              "membership_match": true
+            },
+            "invitation_ui": {
+              "dismissed_immediately": true,
+              "persistent_closed_checks": 2,
+              "persistent_closed": true
+            },
+            "browser_flow": {
+              "private_browser_context": true,
+              "login_tab": "first_tab",
+              "invitation_tab": "second_tab",
+              "leader_link_source": "in_memory_from_group_leader",
+              "same_private_context_for_member_tabs": true
+            }
+          },
+          "attempt_history": [
+            {
+              "at": "2026-07-20T15:38:05.244Z",
+              "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:41:21.155Z",
+              "run_id": "89882b4e-48ab-4c45-8991-fc9c15a594d2",
+              "attempt": 1,
+              "outcome": "membership_confirmed",
+              "role_name": "ZLGW9AKVGZTK",
+              "join_mode": "controlled_physical_mouse_agree_team_success"
+            },
+            {
+              "at": "2026-07-20T15:47:32.200Z",
+              "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+              "attempt": 2,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:48:18.492Z",
+              "run_id": "8a34975e-07a6-4318-a55e-45b642e0d6f9",
+              "attempt": 2,
+              "outcome": "membership_confirmed",
+              "role_name": "ZLGW9AKVGZTK",
+              "join_mode": "already_in_expected_team"
+            }
+          ]
+        }
+      ]
+    },
+    "4": {
+      "group_number": 4,
+      "account_range": {
+        "first": 13,
+        "last": 16
+      },
+      "leader_position": 1,
+      "leader_account_index": 13,
+      "status": "confirmed",
+      "confirmed_at": "2026-07-20T16:04:12.523Z",
+      "created_at": "2026-07-20T15:57:53.559Z",
+      "updated_at": "2026-07-20T16:04:27.539Z",
+      "invite": {
+        "generated_at": "2026-07-20T15:58:11.993Z",
+        "generated_by_position": 1,
+        "generated_by_account_index": 13,
+        "generated_by_email": "hadestxz13@outlook.com",
+        "invitation_type": "team",
+        "endpoint_origin": "https://newserver79-lotr.oasgames.com",
+        "query_fields": [
+          "sid",
+          "ud",
+          "type",
+          "shareuid",
+          "um"
+        ],
+        "full_url_stored": false,
+        "url_sha256": "f92e74435a803abb1082a145afe489817abe951dc25f12949f9e26d3f4452995",
+        "runtime_lifetime": "memory_only_until_current_group_finishes",
+        "server_id": "1411"
+      },
+      "verification": {
+        "expected_member_count": 4,
+        "confirmed_member_count": 4,
+        "confirmed_positions": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "all_members_confirmed": true,
+        "last_server_roster": [
+          "D8P1EGRUZNQO",
+          "I8FB6RK8VO5M",
+          "2K1YH81LMAT1",
+          "86TBIC76GORH"
+        ],
+        "last_checked_at": "2026-07-20T16:04:12.523Z"
+      },
+      "event_history": [
+        {
+          "at": "2026-07-20T15:57:53.874Z",
+          "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+          "type": "group_processing_started",
+          "requested_start_position": 1,
+          "actual_member_start_position": 2
+        },
+        {
+          "at": "2026-07-20T15:57:53.880Z",
+          "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+          "type": "account_attempt_started",
+          "position": 1,
+          "account_index": 13,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:58:11.993Z",
+          "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+          "type": "leader_invite_generated",
+          "account_index": 13,
+          "role_name": "I8FB6RK8VO5M",
+          "invite_url_sha256": "f92e74435a803abb1082a145afe489817abe951dc25f12949f9e26d3f4452995"
+        },
+        {
+          "at": "2026-07-20T15:58:27.027Z",
+          "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+          "type": "account_attempt_started",
+          "position": 2,
+          "account_index": 14,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T15:59:19.770Z",
+          "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+          "type": "member_membership_confirmed",
+          "position": 2,
+          "account_index": 14,
+          "role_name": "2K1YH81LMAT1",
+          "join_mode": "controlled_physical_mouse_agree_team_success",
+          "invitation_closed_checks": 2,
+          "server_roster": [
+            "2K1YH81LMAT1",
+            "I8FB6RK8VO5M"
+          ]
+        },
+        {
+          "at": "2026-07-20T15:59:34.792Z",
+          "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 15,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T16:00:23.376Z",
+          "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 15,
+          "run_attempt": 1,
+          "error": "Gerçek giriş düğmesine basıldı ancak oas_user oturumu oluşmadı."
+        },
+        {
+          "at": "2026-07-20T16:00:38.391Z",
+          "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 15,
+          "run_attempt": 2
+        },
+        {
+          "at": "2026-07-20T16:02:01.609Z",
+          "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+          "type": "member_membership_confirmed",
+          "position": 3,
+          "account_index": 15,
+          "role_name": "86TBIC76GORH",
+          "join_mode": "controlled_physical_mouse_agree_team_success",
+          "invitation_closed_checks": 2,
+          "server_roster": [
+            "86TBIC76GORH",
+            "I8FB6RK8VO5M",
+            "2K1YH81LMAT1"
+          ]
+        },
+        {
+          "at": "2026-07-20T16:02:16.618Z",
+          "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+          "type": "account_attempt_started",
+          "position": 4,
+          "account_index": 16,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-20T16:03:05.077Z",
+          "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+          "type": "account_attempt_failed",
+          "position": 4,
+          "account_index": 16,
+          "run_attempt": 1,
+          "error": "Gerçek giriş düğmesine basıldı ancak oas_user oturumu oluşmadı."
+        },
+        {
+          "at": "2026-07-20T16:03:20.091Z",
+          "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+          "type": "account_attempt_started",
+          "position": 4,
+          "account_index": 16,
+          "run_attempt": 2
+        },
+        {
+          "at": "2026-07-20T16:04:12.523Z",
+          "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+          "type": "member_membership_confirmed",
+          "position": 4,
+          "account_index": 16,
+          "role_name": "D8P1EGRUZNQO",
+          "join_mode": "controlled_physical_mouse_agree_team_success",
+          "invitation_closed_checks": 2,
+          "server_roster": [
+            "D8P1EGRUZNQO",
+            "I8FB6RK8VO5M",
+            "2K1YH81LMAT1",
+            "86TBIC76GORH"
+          ]
+        },
+        {
+          "at": "2026-07-20T16:04:27.539Z",
+          "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+          "type": "group_processing_finished",
+          "final_status": "confirmed",
+          "confirmed_positions": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "at": "2026-07-20T16:04:27.539Z",
+          "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+          "type": "leader_invite_removed_from_runtime_memory"
+        }
+      ],
+      "accounts": [
+        {
+          "position": 1,
+          "group_role": "leader",
+          "account_index": 13,
+          "email": "hadestxz13@outlook.com",
+          "nickname_from_verified_accounts": "I8FB6RK8VO5M",
+          "account_creation_verified_at": "2026-07-20T18:53:52+03:00",
+          "account_creation_verification": {
+            "email_progress_key": "hadestxz13@outlook.com",
+            "two_blue_loading_bars": true
+          },
+          "source_account_verified": true,
+          "grouping_status": "leader_confirmed",
+          "actual_role_name": "I8FB6RK8VO5M",
+          "grouping_attempt_count": 1,
+          "last_attempt_at": "2026-07-20T15:57:53.880Z",
+          "confirmed_at": "2026-07-20T15:58:11.993Z",
+          "last_error": null,
+          "evidence": {
+            "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+            "role_matches_verified_nickname": true,
+            "role_name_source": "binding_or_completed_accounts",
+            "role_binding_verified": true,
+            "server_id": "1411",
+            "role_id": "319148802092503",
+            "initial_server_roster": [
+              "I8FB6RK8VO5M"
+            ],
+            "invite_link": {
+              "full_url_stored": false,
+              "reason": "um ve kullanıcı kimliği içeren davet URLsi güvenlik için saklanmaz.",
+              "sha256": "f92e74435a803abb1082a145afe489817abe951dc25f12949f9e26d3f4452995",
+              "runtime_lifetime": "memory_only_until_current_group_finishes"
+            }
+          },
+          "attempt_history": [
+            {
+              "at": "2026-07-20T15:57:53.880Z",
+              "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:58:11.993Z",
+              "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+              "attempt": 1,
+              "outcome": "leader_confirmed",
+              "role_name": "I8FB6RK8VO5M"
+            }
+          ]
+        },
+        {
+          "position": 2,
+          "group_role": "member",
+          "account_index": 14,
+          "email": "hadestxz14@outlook.com",
+          "nickname_from_verified_accounts": "2K1YH81LMAT1",
+          "account_creation_verified_at": "2026-07-20T18:54:56+03:00",
+          "account_creation_verification": {
+            "email_progress_key": "hadestxz14@outlook.com",
+            "two_blue_loading_bars": true
+          },
+          "source_account_verified": true,
+          "grouping_status": "membership_confirmed",
+          "actual_role_name": "2K1YH81LMAT1",
+          "grouping_attempt_count": 1,
+          "last_attempt_at": "2026-07-20T15:58:27.027Z",
+          "confirmed_at": "2026-07-20T15:59:19.770Z",
+          "last_error": null,
+          "evidence": {
+            "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+            "role_matches_verified_nickname": true,
+            "already_member_before_request": false,
+            "join_mode": "controlled_physical_mouse_agree_team_success",
+            "role_name_source": "completed_accounts.json",
+            "event_registration": {
+              "required": true,
+              "verified": true,
+              "endpoint": "/binding",
+              "server_id": "1411",
+              "role_id": "390105267823744",
+              "role_name": "2K1YH81LMAT1",
+              "http_status": 200,
+              "response_status": "success"
+            },
+            "api": {
+              "endpoint": "/agreeTeam",
+              "method": "POST",
+              "response_observed": true,
+              "request_payload_fields_verified": [
+                "user_id",
+                "um",
+                "teamuid"
+              ],
+              "http_status": 200,
+              "response_status": "success",
+              "error_code": null,
+              "controlled_request_attempts": 2,
+              "cloudfront_recovery_count": 0,
+              "panel_kept_open_until_server_verification": true
+            },
+            "server": {
+              "expected_leader_role": "I8FB6RK8VO5M",
+              "expected_member_role": "2K1YH81LMAT1",
+              "roster": [
+                "2K1YH81LMAT1",
+                "I8FB6RK8VO5M"
+              ],
+              "membership_match": true
+            },
+            "invitation_ui": {
+              "dismissed_immediately": false,
+              "dismissed_only_after_server_verification": true,
+              "physical_mouse_click_count": 1,
+              "devtools_reflow_simulated": true,
+              "site_navigation_observed": false,
+              "persistent_closed_checks": 2,
+              "persistent_closed": true
+            },
+            "browser_flow": {
+              "private_browser_context": true,
+              "login_tab": "first_tab",
+              "invitation_tab": "second_tab",
+              "leader_link_source": "in_memory_from_group_leader",
+              "same_private_context_for_member_tabs": true
+            }
+          },
+          "attempt_history": [
+            {
+              "at": "2026-07-20T15:58:27.027Z",
+              "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T15:59:19.770Z",
+              "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+              "attempt": 1,
+              "outcome": "membership_confirmed",
+              "role_name": "2K1YH81LMAT1",
+              "join_mode": "controlled_physical_mouse_agree_team_success"
+            }
+          ]
+        },
+        {
+          "position": 3,
+          "group_role": "member",
+          "account_index": 15,
+          "email": "hadestxz15@outlook.com",
+          "nickname_from_verified_accounts": "86TBIC76GORH",
+          "account_creation_verified_at": "2026-07-20T18:56:01+03:00",
+          "account_creation_verification": {
+            "email_progress_key": "hadestxz15@outlook.com",
+            "two_blue_loading_bars": true
+          },
+          "source_account_verified": true,
+          "grouping_status": "membership_confirmed",
+          "actual_role_name": "86TBIC76GORH",
+          "grouping_attempt_count": 2,
+          "last_attempt_at": "2026-07-20T16:00:38.391Z",
+          "confirmed_at": "2026-07-20T16:02:01.609Z",
+          "last_error": null,
+          "evidence": {
+            "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+            "role_matches_verified_nickname": true,
+            "already_member_before_request": false,
+            "join_mode": "controlled_physical_mouse_agree_team_success",
+            "role_name_source": "completed_accounts.json",
+            "event_registration": {
+              "required": true,
+              "verified": true,
+              "endpoint": "/binding",
+              "server_id": "1411",
+              "role_id": "318681609698605",
+              "role_name": "86TBIC76GORH",
+              "http_status": 200,
+              "response_status": "success"
+            },
+            "api": {
+              "endpoint": "/agreeTeam",
+              "method": "POST",
+              "response_observed": true,
+              "request_payload_fields_verified": [
+                "user_id",
+                "um",
+                "teamuid"
+              ],
+              "http_status": 200,
+              "response_status": "success",
+              "error_code": null,
+              "controlled_request_attempts": 4,
+              "cloudfront_recovery_count": 0,
+              "panel_kept_open_until_server_verification": true
+            },
+            "server": {
+              "expected_leader_role": "I8FB6RK8VO5M",
+              "expected_member_role": "86TBIC76GORH",
+              "roster": [
+                "86TBIC76GORH",
+                "I8FB6RK8VO5M",
+                "2K1YH81LMAT1"
+              ],
+              "membership_match": true
+            },
+            "invitation_ui": {
+              "dismissed_immediately": false,
+              "dismissed_only_after_server_verification": true,
+              "physical_mouse_click_count": 1,
+              "devtools_reflow_simulated": true,
+              "site_navigation_observed": false,
+              "persistent_closed_checks": 2,
+              "persistent_closed": true
+            },
+            "browser_flow": {
+              "private_browser_context": true,
+              "login_tab": "first_tab",
+              "invitation_tab": "second_tab",
+              "leader_link_source": "in_memory_from_group_leader",
+              "same_private_context_for_member_tabs": true
+            }
+          },
+          "attempt_history": [
+            {
+              "at": "2026-07-20T15:59:34.792Z",
+              "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T16:00:23.376Z",
+              "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "Gerçek giriş düğmesine basıldı ancak oas_user oturumu oluşmadı."
+            },
+            {
+              "at": "2026-07-20T16:00:38.391Z",
+              "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+              "attempt": 2,
+              "run_attempt": 2,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T16:02:01.609Z",
+              "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+              "attempt": 2,
+              "outcome": "membership_confirmed",
+              "role_name": "86TBIC76GORH",
+              "join_mode": "controlled_physical_mouse_agree_team_success"
+            }
+          ]
+        },
+        {
+          "position": 4,
+          "group_role": "member",
+          "account_index": 16,
+          "email": "hadestxz16@outlook.com",
+          "nickname_from_verified_accounts": "D8P1EGRUZNQO",
+          "account_creation_verified_at": "2026-07-20T18:57:03+03:00",
+          "account_creation_verification": {
+            "email_progress_key": "hadestxz16@outlook.com",
+            "two_blue_loading_bars": true
+          },
+          "source_account_verified": true,
+          "grouping_status": "membership_confirmed",
+          "actual_role_name": "D8P1EGRUZNQO",
+          "grouping_attempt_count": 2,
+          "last_attempt_at": "2026-07-20T16:03:20.091Z",
+          "confirmed_at": "2026-07-20T16:04:12.523Z",
+          "last_error": null,
+          "evidence": {
+            "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+            "role_matches_verified_nickname": true,
+            "already_member_before_request": false,
+            "join_mode": "controlled_physical_mouse_agree_team_success",
+            "role_name_source": "completed_accounts.json",
+            "event_registration": {
+              "required": true,
+              "verified": true,
+              "endpoint": "/binding",
+              "server_id": "1411",
+              "role_id": "380890314933344",
+              "role_name": "D8P1EGRUZNQO",
+              "http_status": 200,
+              "response_status": "success"
+            },
+            "api": {
+              "endpoint": "/agreeTeam",
+              "method": "POST",
+              "response_observed": true,
+              "request_payload_fields_verified": [
+                "user_id",
+                "um",
+                "teamuid"
+              ],
+              "http_status": 200,
+              "response_status": "success",
+              "error_code": null,
+              "controlled_request_attempts": 2,
+              "cloudfront_recovery_count": 0,
+              "panel_kept_open_until_server_verification": true
+            },
+            "server": {
+              "expected_leader_role": "I8FB6RK8VO5M",
+              "expected_member_role": "D8P1EGRUZNQO",
+              "roster": [
+                "D8P1EGRUZNQO",
+                "I8FB6RK8VO5M",
+                "2K1YH81LMAT1",
+                "86TBIC76GORH"
+              ],
+              "membership_match": true
+            },
+            "invitation_ui": {
+              "dismissed_immediately": false,
+              "dismissed_only_after_server_verification": true,
+              "physical_mouse_click_count": 1,
+              "devtools_reflow_simulated": true,
+              "site_navigation_observed": false,
+              "persistent_closed_checks": 2,
+              "persistent_closed": true
+            },
+            "browser_flow": {
+              "private_browser_context": true,
+              "login_tab": "first_tab",
+              "invitation_tab": "second_tab",
+              "leader_link_source": "in_memory_from_group_leader",
+              "same_private_context_for_member_tabs": true
+            }
+          },
+          "attempt_history": [
+            {
+              "at": "2026-07-20T16:02:16.618Z",
+              "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T16:03:05.077Z",
+              "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+              "attempt": 1,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "Gerçek giriş düğmesine basıldı ancak oas_user oturumu oluşmadı."
+            },
+            {
+              "at": "2026-07-20T16:03:20.091Z",
+              "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+              "attempt": 2,
+              "run_attempt": 2,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-20T16:04:12.523Z",
+              "run_id": "9a0a1d46-fb1a-49c7-be4c-0cfce97c1ae9",
+              "attempt": 2,
+              "outcome": "membership_confirmed",
+              "role_name": "D8P1EGRUZNQO",
+              "join_mode": "controlled_physical_mouse_agree_team_success"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

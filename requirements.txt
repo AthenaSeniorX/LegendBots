@@ -1,0 +1,6 @@
+PyAutoGUI>=0.9.54,<1
+pyperclip>=1.9,<2
+pywinauto>=0.6.9,<1
+opencv-python>=4.10,<5
+numpy>=2,<2.3
+Pillow>=10,<13

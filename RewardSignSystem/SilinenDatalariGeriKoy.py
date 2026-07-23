@@ -2,8 +2,12 @@ import time
 import pyautogui
 import pyperclip
 
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+
 # Text dosyasını oku
-with open("C:\\Users\\EGEMEN ÖNDER\\Desktop\\LegendBots\\BackUpData.txt", "r") as file:
+with open(BASE_DIR / "BackUpData.txt", "r", encoding="utf-8") as file:
     lines = file.readlines()
 
 # Verileri işlemek için bir sözlük oluştur

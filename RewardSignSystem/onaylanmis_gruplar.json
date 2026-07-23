@@ -2,7 +2,7 @@
   "version": 1,
   "file_type": "legendbots_confirmed_groups",
   "created_at": "2026-07-20T14:36:59.668Z",
-  "updated_at": "2026-07-22T21:58:13.139Z",
+  "updated_at": "2026-07-23T08:33:45.585Z",
   "grouping_policy": {
     "group_size": 4,
     "leader_position": 1,
@@ -20,7 +20,7 @@
     "verified_account_count": 4,
     "complete_group_count": 1,
     "incomplete_groups": [],
-    "last_loaded_at": "2026-07-22T21:55:02.354Z"
+    "last_loaded_at": "2026-07-23T08:31:26.708Z"
   },
   "runs": [
     {
@@ -864,8 +864,8 @@
     {
       "run_id": "d060fbf3-d742-4f9a-a715-f36f69b5b9d6",
       "started_at": "2026-07-22T21:55:02.354Z",
-      "completed_at": null,
-      "status": "running",
+      "completed_at": "2026-07-23T08:03:11.751Z",
+      "status": "interrupted",
       "requested_start_group": 16,
       "requested_start_member_position": 1,
       "browser_mode": "incognito_visible",
@@ -873,7 +873,78 @@
         16
       ],
       "completed_groups_during_run": [],
-      "error": null
+      "error": {
+        "at": "2026-07-23T08:03:11.751Z",
+        "message": "Önceki süreç kesin sonuç yazmadan kapandı; sonraki çalışmada kurtarıldı."
+      }
+    },
+    {
+      "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+      "started_at": "2026-07-23T08:03:11.751Z",
+      "completed_at": "2026-07-23T08:11:48.333Z",
+      "status": "failed",
+      "requested_start_group": 16,
+      "requested_start_member_position": 1,
+      "browser_mode": "incognito_visible",
+      "planned_groups": [
+        16
+      ],
+      "completed_groups_during_run": [],
+      "error": {
+        "at": "2026-07-23T08:11:48.333Z",
+        "message": "hadestxz63@outlook.com 5 denemede doğrulanamadı. Güvenlik gereği sıradaki üyeye veya gruba geçilmedi. Son hata: Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+      }
+    },
+    {
+      "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+      "started_at": "2026-07-23T08:13:47.794Z",
+      "completed_at": "2026-07-23T08:23:19.530Z",
+      "status": "failed",
+      "requested_start_group": 16,
+      "requested_start_member_position": 1,
+      "browser_mode": "incognito_visible",
+      "planned_groups": [
+        16
+      ],
+      "completed_groups_during_run": [],
+      "error": {
+        "at": "2026-07-23T08:23:19.530Z",
+        "message": "hadestxz63@outlook.com 5 denemede doğrulanamadı. Güvenlik gereği sıradaki üyeye veya gruba geçilmedi. Son hata: Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+      }
+    },
+    {
+      "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+      "started_at": "2026-07-23T08:24:20.667Z",
+      "completed_at": "2026-07-23T08:31:23.290Z",
+      "status": "failed",
+      "requested_start_group": 16,
+      "requested_start_member_position": 1,
+      "browser_mode": "incognito_visible",
+      "planned_groups": [
+        16
+      ],
+      "completed_groups_during_run": [],
+      "error": {
+        "at": "2026-07-23T08:31:23.290Z",
+        "message": "hadestxz63@outlook.com 5 denemede doğrulanamadı. Güvenlik gereği sıradaki üyeye veya gruba geçilmedi. Son hata: Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+      }
+    },
+    {
+      "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+      "started_at": "2026-07-23T08:31:26.709Z",
+      "completed_at": "2026-07-23T08:33:45.585Z",
+      "status": "failed",
+      "requested_start_group": 16,
+      "requested_start_member_position": 1,
+      "browser_mode": "incognito_visible",
+      "planned_groups": [
+        16
+      ],
+      "completed_groups_during_run": [],
+      "error": {
+        "at": "2026-07-23T08:33:45.585Z",
+        "message": "hadestxz63@outlook.com 5 denemede doğrulanamadı. Güvenlik gereği sıradaki üyeye veya gruba geçilmedi. Son hata: Protocol error: Connection closed."
+      }
     }
   ],
   "groups": {
@@ -11729,7 +11800,7 @@
       "status": "partially_confirmed",
       "confirmed_at": null,
       "created_at": "2026-07-22T21:03:48.463Z",
-      "updated_at": "2026-07-22T21:58:13.139Z",
+      "updated_at": "2026-07-23T08:33:45.576Z",
       "invite": {
         "generated_at": "2026-07-22T21:04:59.561Z",
         "generated_by_position": 1,
@@ -12342,6 +12413,374 @@
           "position": 3,
           "account_index": 63,
           "run_attempt": 3
+        },
+        {
+          "at": "2026-07-23T08:03:12.184Z",
+          "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+          "type": "group_processing_started",
+          "requested_start_position": 1,
+          "actual_member_start_position": 2
+        },
+        {
+          "at": "2026-07-23T08:03:12.722Z",
+          "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-23T08:04:16.681Z",
+          "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 1,
+          "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+        },
+        {
+          "at": "2026-07-23T08:04:31.695Z",
+          "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 2
+        },
+        {
+          "at": "2026-07-23T08:04:55.863Z",
+          "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 2,
+          "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+        },
+        {
+          "at": "2026-07-23T08:05:10.880Z",
+          "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 3
+        },
+        {
+          "at": "2026-07-23T08:08:49.231Z",
+          "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 3,
+          "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+        },
+        {
+          "at": "2026-07-23T08:09:04.267Z",
+          "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 4
+        },
+        {
+          "at": "2026-07-23T08:09:59.994Z",
+          "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 4,
+          "error": "Gerçek giriş düğmesine basıldı ancak oas_user oturumu oluşmadı."
+        },
+        {
+          "at": "2026-07-23T08:10:15.013Z",
+          "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 5
+        },
+        {
+          "at": "2026-07-23T08:11:48.307Z",
+          "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 5,
+          "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+        },
+        {
+          "at": "2026-07-23T08:13:48.311Z",
+          "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+          "type": "group_processing_started",
+          "requested_start_position": 1,
+          "actual_member_start_position": 2
+        },
+        {
+          "at": "2026-07-23T08:13:48.889Z",
+          "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-23T08:15:32.425Z",
+          "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 1,
+          "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+        },
+        {
+          "at": "2026-07-23T08:15:47.451Z",
+          "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 2
+        },
+        {
+          "at": "2026-07-23T08:16:42.234Z",
+          "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 2,
+          "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+        },
+        {
+          "at": "2026-07-23T08:16:57.251Z",
+          "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 3
+        },
+        {
+          "at": "2026-07-23T08:18:30.650Z",
+          "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 3,
+          "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+        },
+        {
+          "at": "2026-07-23T08:18:45.677Z",
+          "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 4
+        },
+        {
+          "at": "2026-07-23T08:19:36.180Z",
+          "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 4,
+          "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+        },
+        {
+          "at": "2026-07-23T08:19:51.207Z",
+          "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 5
+        },
+        {
+          "at": "2026-07-23T08:23:19.508Z",
+          "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 5,
+          "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+        },
+        {
+          "at": "2026-07-23T08:24:21.042Z",
+          "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+          "type": "group_processing_started",
+          "requested_start_position": 1,
+          "actual_member_start_position": 2
+        },
+        {
+          "at": "2026-07-23T08:24:21.527Z",
+          "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-23T08:26:08.941Z",
+          "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 1,
+          "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+        },
+        {
+          "at": "2026-07-23T08:26:23.964Z",
+          "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 2
+        },
+        {
+          "at": "2026-07-23T08:27:18.702Z",
+          "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 2,
+          "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+        },
+        {
+          "at": "2026-07-23T08:27:33.717Z",
+          "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 3
+        },
+        {
+          "at": "2026-07-23T08:29:06.831Z",
+          "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 3,
+          "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+        },
+        {
+          "at": "2026-07-23T08:29:21.852Z",
+          "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 4
+        },
+        {
+          "at": "2026-07-23T08:30:13.603Z",
+          "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 4,
+          "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+        },
+        {
+          "at": "2026-07-23T08:30:28.660Z",
+          "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 5
+        },
+        {
+          "at": "2026-07-23T08:31:23.261Z",
+          "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 5,
+          "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+        },
+        {
+          "at": "2026-07-23T08:31:27.275Z",
+          "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+          "type": "group_processing_started",
+          "requested_start_position": 1,
+          "actual_member_start_position": 2
+        },
+        {
+          "at": "2026-07-23T08:31:27.843Z",
+          "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 1
+        },
+        {
+          "at": "2026-07-23T08:32:45.466Z",
+          "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 1,
+          "error": "Protocol error: Connection closed."
+        },
+        {
+          "at": "2026-07-23T08:33:00.477Z",
+          "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 2
+        },
+        {
+          "at": "2026-07-23T08:33:00.488Z",
+          "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 2,
+          "error": "Protocol error: Connection closed."
+        },
+        {
+          "at": "2026-07-23T08:33:15.498Z",
+          "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 3
+        },
+        {
+          "at": "2026-07-23T08:33:15.507Z",
+          "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 3,
+          "error": "Protocol error: Connection closed."
+        },
+        {
+          "at": "2026-07-23T08:33:30.524Z",
+          "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 4
+        },
+        {
+          "at": "2026-07-23T08:33:30.535Z",
+          "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 4,
+          "error": "Protocol error: Connection closed."
+        },
+        {
+          "at": "2026-07-23T08:33:45.554Z",
+          "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+          "type": "account_attempt_started",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 5
+        },
+        {
+          "at": "2026-07-23T08:33:45.567Z",
+          "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+          "type": "account_attempt_failed",
+          "position": 3,
+          "account_index": 63,
+          "run_attempt": 5,
+          "error": "Protocol error: Connection closed."
         }
       ],
       "accounts": [
@@ -12504,319 +12943,19 @@
             "package_id": "group-000016"
           },
           "source_account_verified": true,
-          "grouping_status": "membership_processing",
+          "grouping_status": "membership_failed",
           "actual_role_name": null,
-          "grouping_attempt_count": 28,
-          "last_attempt_at": "2026-07-22T21:58:13.139Z",
+          "grouping_attempt_count": 48,
+          "last_attempt_at": "2026-07-23T08:33:45.554Z",
           "confirmed_at": null,
           "last_error": {
-            "at": "2026-07-22T21:57:58.109Z",
-            "message": "Gerçek giriş düğmesine basıldı ancak oas_user oturumu oluşmadı.",
-            "run_id": "d060fbf3-d742-4f9a-a715-f36f69b5b9d6",
-            "run_attempt": 2
+            "at": "2026-07-23T08:33:45.567Z",
+            "message": "Protocol error: Connection closed.",
+            "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+            "run_attempt": 5
           },
           "evidence": null,
           "attempt_history": [
-            {
-              "at": "2026-07-22T21:17:06.392Z",
-              "run_id": "9431ad49-f703-4439-aa78-6ae4a4279c47",
-              "attempt": 3,
-              "run_attempt": 3,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:17:21.405Z",
-              "run_id": "9431ad49-f703-4439-aa78-6ae4a4279c47",
-              "attempt": 4,
-              "run_attempt": 4,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:19:45.268Z",
-              "run_id": "9431ad49-f703-4439-aa78-6ae4a4279c47",
-              "attempt": 4,
-              "run_attempt": 4,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:20:00.283Z",
-              "run_id": "9431ad49-f703-4439-aa78-6ae4a4279c47",
-              "attempt": 5,
-              "run_attempt": 5,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:21:30.183Z",
-              "run_id": "9431ad49-f703-4439-aa78-6ae4a4279c47",
-              "attempt": 5,
-              "run_attempt": 5,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:21:53.953Z",
-              "run_id": "e900cf56-9200-4aeb-9666-8eebd0250a97",
-              "attempt": 6,
-              "run_attempt": 1,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:24:09.225Z",
-              "run_id": "e900cf56-9200-4aeb-9666-8eebd0250a97",
-              "attempt": 6,
-              "run_attempt": 1,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:24:24.243Z",
-              "run_id": "e900cf56-9200-4aeb-9666-8eebd0250a97",
-              "attempt": 7,
-              "run_attempt": 2,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:25:44.201Z",
-              "run_id": "e900cf56-9200-4aeb-9666-8eebd0250a97",
-              "attempt": 7,
-              "run_attempt": 2,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:25:59.219Z",
-              "run_id": "e900cf56-9200-4aeb-9666-8eebd0250a97",
-              "attempt": 8,
-              "run_attempt": 3,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:26:29.510Z",
-              "run_id": "e900cf56-9200-4aeb-9666-8eebd0250a97",
-              "attempt": 8,
-              "run_attempt": 3,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:26:44.527Z",
-              "run_id": "e900cf56-9200-4aeb-9666-8eebd0250a97",
-              "attempt": 9,
-              "run_attempt": 4,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:27:39.226Z",
-              "run_id": "e900cf56-9200-4aeb-9666-8eebd0250a97",
-              "attempt": 9,
-              "run_attempt": 4,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:27:54.240Z",
-              "run_id": "e900cf56-9200-4aeb-9666-8eebd0250a97",
-              "attempt": 10,
-              "run_attempt": 5,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:31:04.229Z",
-              "run_id": "e900cf56-9200-4aeb-9666-8eebd0250a97",
-              "attempt": 10,
-              "run_attempt": 5,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:31:07.508Z",
-              "run_id": "a566843c-77ed-463d-8694-3a27d7a126f9",
-              "attempt": 11,
-              "run_attempt": 1,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:32:48.225Z",
-              "run_id": "a566843c-77ed-463d-8694-3a27d7a126f9",
-              "attempt": 11,
-              "run_attempt": 1,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:33:03.247Z",
-              "run_id": "a566843c-77ed-463d-8694-3a27d7a126f9",
-              "attempt": 12,
-              "run_attempt": 2,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:33:58.612Z",
-              "run_id": "a566843c-77ed-463d-8694-3a27d7a126f9",
-              "attempt": 12,
-              "run_attempt": 2,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:34:13.632Z",
-              "run_id": "a566843c-77ed-463d-8694-3a27d7a126f9",
-              "attempt": 13,
-              "run_attempt": 3,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:34:58.142Z",
-              "run_id": "a566843c-77ed-463d-8694-3a27d7a126f9",
-              "attempt": 13,
-              "run_attempt": 3,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:35:13.162Z",
-              "run_id": "a566843c-77ed-463d-8694-3a27d7a126f9",
-              "attempt": 14,
-              "run_attempt": 4,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:36:29.367Z",
-              "run_id": "a566843c-77ed-463d-8694-3a27d7a126f9",
-              "attempt": 14,
-              "run_attempt": 4,
-              "outcome": "failed",
-              "error": "Gerçek giriş düğmesine basıldı ancak oas_user oturumu oluşmadı."
-            },
-            {
-              "at": "2026-07-22T21:36:44.384Z",
-              "run_id": "a566843c-77ed-463d-8694-3a27d7a126f9",
-              "attempt": 15,
-              "run_attempt": 5,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:37:42.203Z",
-              "run_id": "a566843c-77ed-463d-8694-3a27d7a126f9",
-              "attempt": 15,
-              "run_attempt": 5,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:40:00.098Z",
-              "run_id": "28d2542c-41b1-4a90-a4a1-6ac2aa985600",
-              "attempt": 16,
-              "run_attempt": 1,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:41:43.730Z",
-              "run_id": "28d2542c-41b1-4a90-a4a1-6ac2aa985600",
-              "attempt": 16,
-              "run_attempt": 1,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:41:58.752Z",
-              "run_id": "28d2542c-41b1-4a90-a4a1-6ac2aa985600",
-              "attempt": 17,
-              "run_attempt": 2,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:42:53.677Z",
-              "run_id": "28d2542c-41b1-4a90-a4a1-6ac2aa985600",
-              "attempt": 17,
-              "run_attempt": 2,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:43:08.693Z",
-              "run_id": "28d2542c-41b1-4a90-a4a1-6ac2aa985600",
-              "attempt": 18,
-              "run_attempt": 3,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:43:48.549Z",
-              "run_id": "28d2542c-41b1-4a90-a4a1-6ac2aa985600",
-              "attempt": 18,
-              "run_attempt": 3,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:44:03.562Z",
-              "run_id": "28d2542c-41b1-4a90-a4a1-6ac2aa985600",
-              "attempt": 19,
-              "run_attempt": 4,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:45:13.602Z",
-              "run_id": "28d2542c-41b1-4a90-a4a1-6ac2aa985600",
-              "attempt": 19,
-              "run_attempt": 4,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:45:28.623Z",
-              "run_id": "28d2542c-41b1-4a90-a4a1-6ac2aa985600",
-              "attempt": 20,
-              "run_attempt": 5,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:45:43.590Z",
-              "run_id": "28d2542c-41b1-4a90-a4a1-6ac2aa985600",
-              "attempt": 20,
-              "run_attempt": 5,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:48:01.376Z",
-              "run_id": "87f4629c-b3b8-4a7c-9374-8ae8b2454414",
-              "attempt": 21,
-              "run_attempt": 1,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:49:06.179Z",
-              "run_id": "87f4629c-b3b8-4a7c-9374-8ae8b2454414",
-              "attempt": 21,
-              "run_attempt": 1,
-              "outcome": "failed",
-              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
-            },
-            {
-              "at": "2026-07-22T21:49:21.203Z",
-              "run_id": "87f4629c-b3b8-4a7c-9374-8ae8b2454414",
-              "attempt": 22,
-              "run_attempt": 2,
-              "outcome": "started"
-            },
-            {
-              "at": "2026-07-22T21:50:21.531Z",
-              "run_id": "87f4629c-b3b8-4a7c-9374-8ae8b2454414",
-              "attempt": 22,
-              "run_attempt": 2,
-              "outcome": "failed",
-              "error": "Gerçek giriş düğmesine basıldı ancak oas_user oturumu oluşmadı."
-            },
-            {
-              "at": "2026-07-22T21:50:36.546Z",
-              "run_id": "87f4629c-b3b8-4a7c-9374-8ae8b2454414",
-              "attempt": 23,
-              "run_attempt": 3,
-              "outcome": "started"
-            },
             {
               "at": "2026-07-22T21:51:10.674Z",
               "run_id": "87f4629c-b3b8-4a7c-9374-8ae8b2454414",
@@ -12891,6 +13030,306 @@
               "attempt": 28,
               "run_attempt": 3,
               "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:03:12.722Z",
+              "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+              "attempt": 29,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:04:16.681Z",
+              "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+              "attempt": 29,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+            },
+            {
+              "at": "2026-07-23T08:04:31.695Z",
+              "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+              "attempt": 30,
+              "run_attempt": 2,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:04:55.863Z",
+              "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+              "attempt": 30,
+              "run_attempt": 2,
+              "outcome": "failed",
+              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+            },
+            {
+              "at": "2026-07-23T08:05:10.880Z",
+              "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+              "attempt": 31,
+              "run_attempt": 3,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:08:49.231Z",
+              "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+              "attempt": 31,
+              "run_attempt": 3,
+              "outcome": "failed",
+              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+            },
+            {
+              "at": "2026-07-23T08:09:04.267Z",
+              "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+              "attempt": 32,
+              "run_attempt": 4,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:09:59.994Z",
+              "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+              "attempt": 32,
+              "run_attempt": 4,
+              "outcome": "failed",
+              "error": "Gerçek giriş düğmesine basıldı ancak oas_user oturumu oluşmadı."
+            },
+            {
+              "at": "2026-07-23T08:10:15.013Z",
+              "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+              "attempt": 33,
+              "run_attempt": 5,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:11:48.307Z",
+              "run_id": "980f6efa-b4e7-4b27-88d5-5cadca01a050",
+              "attempt": 33,
+              "run_attempt": 5,
+              "outcome": "failed",
+              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+            },
+            {
+              "at": "2026-07-23T08:13:48.889Z",
+              "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+              "attempt": 34,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:15:32.425Z",
+              "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+              "attempt": 34,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+            },
+            {
+              "at": "2026-07-23T08:15:47.451Z",
+              "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+              "attempt": 35,
+              "run_attempt": 2,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:16:42.234Z",
+              "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+              "attempt": 35,
+              "run_attempt": 2,
+              "outcome": "failed",
+              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+            },
+            {
+              "at": "2026-07-23T08:16:57.251Z",
+              "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+              "attempt": 36,
+              "run_attempt": 3,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:18:30.650Z",
+              "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+              "attempt": 36,
+              "run_attempt": 3,
+              "outcome": "failed",
+              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+            },
+            {
+              "at": "2026-07-23T08:18:45.677Z",
+              "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+              "attempt": 37,
+              "run_attempt": 4,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:19:36.180Z",
+              "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+              "attempt": 37,
+              "run_attempt": 4,
+              "outcome": "failed",
+              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+            },
+            {
+              "at": "2026-07-23T08:19:51.206Z",
+              "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+              "attempt": 38,
+              "run_attempt": 5,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:23:19.508Z",
+              "run_id": "6aaf6649-cfca-45b0-89e6-2482762fda4a",
+              "attempt": 38,
+              "run_attempt": 5,
+              "outcome": "failed",
+              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+            },
+            {
+              "at": "2026-07-23T08:24:21.527Z",
+              "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+              "attempt": 39,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:26:08.941Z",
+              "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+              "attempt": 39,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+            },
+            {
+              "at": "2026-07-23T08:26:23.964Z",
+              "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+              "attempt": 40,
+              "run_attempt": 2,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:27:18.702Z",
+              "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+              "attempt": 40,
+              "run_attempt": 2,
+              "outcome": "failed",
+              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+            },
+            {
+              "at": "2026-07-23T08:27:33.717Z",
+              "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+              "attempt": 41,
+              "run_attempt": 3,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:29:06.831Z",
+              "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+              "attempt": 41,
+              "run_attempt": 3,
+              "outcome": "failed",
+              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+            },
+            {
+              "at": "2026-07-23T08:29:21.852Z",
+              "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+              "attempt": 42,
+              "run_attempt": 4,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:30:13.603Z",
+              "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+              "attempt": 42,
+              "run_attempt": 4,
+              "outcome": "failed",
+              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+            },
+            {
+              "at": "2026-07-23T08:30:28.660Z",
+              "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+              "attempt": 43,
+              "run_attempt": 5,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:31:23.261Z",
+              "run_id": "51f80dbc-dab4-4f58-ad00-e80c5c1ab25f",
+              "attempt": 43,
+              "run_attempt": 5,
+              "outcome": "failed",
+              "error": "Üye etkinlik kaydı için uygun rol bulunamadı. Beklenen sunucu=1411, rol=6NTZBWAQ2HR3; adaylar=1411:6ntzbwa2hr3, 1410:Boş, 1409:Boş, 1408:Boş, 1407:Boş."
+            },
+            {
+              "at": "2026-07-23T08:31:27.843Z",
+              "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+              "attempt": 44,
+              "run_attempt": 1,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:32:45.466Z",
+              "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+              "attempt": 44,
+              "run_attempt": 1,
+              "outcome": "failed",
+              "error": "Protocol error: Connection closed."
+            },
+            {
+              "at": "2026-07-23T08:33:00.477Z",
+              "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+              "attempt": 45,
+              "run_attempt": 2,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:33:00.488Z",
+              "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+              "attempt": 45,
+              "run_attempt": 2,
+              "outcome": "failed",
+              "error": "Protocol error: Connection closed."
+            },
+            {
+              "at": "2026-07-23T08:33:15.498Z",
+              "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+              "attempt": 46,
+              "run_attempt": 3,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:33:15.507Z",
+              "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+              "attempt": 46,
+              "run_attempt": 3,
+              "outcome": "failed",
+              "error": "Protocol error: Connection closed."
+            },
+            {
+              "at": "2026-07-23T08:33:30.524Z",
+              "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+              "attempt": 47,
+              "run_attempt": 4,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:33:30.535Z",
+              "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+              "attempt": 47,
+              "run_attempt": 4,
+              "outcome": "failed",
+              "error": "Protocol error: Connection closed."
+            },
+            {
+              "at": "2026-07-23T08:33:45.554Z",
+              "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+              "attempt": 48,
+              "run_attempt": 5,
+              "outcome": "started"
+            },
+            {
+              "at": "2026-07-23T08:33:45.567Z",
+              "run_id": "1089606a-6261-4cea-a99d-4e8fdf6fa448",
+              "attempt": 48,
+              "run_attempt": 5,
+              "outcome": "failed",
+              "error": "Protocol error: Connection closed."
             }
           ]
         },

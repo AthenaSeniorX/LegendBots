@@ -1,12 +1,14 @@
-node_modules
+# Dependencies & Cache
+node_modules/
 __pycache__/
 *.py[cod]
 .mypy_cache/
-automation.log*
-grupla.log*
 GPUCache/
+
+# Runtime state & logs
+*.log*
 completed_accounts.json
 completed_accounts.json.tmp
 pipeline-runtime/
-manager-errors.log*
-debug.log*
+onaylanmis_gruplar.json.tmp
+

@@ -20,6 +20,21 @@
     "retry_base_seconds": 60,
     "retry_max_seconds": 3600
   },
+  "delivery_targets": [
+    {
+      "thresholds": [80],
+      "collection": "80Times",
+      "document_id": "cmBFCEAZbryN3H6yFRyB",
+      "field": "Codes"
+    },
+    {
+      "thresholds": [10, 15, 20, 30, 40, 60, 100],
+      "collection": "SupportPack",
+      "document_id": "RFh7iMjSDWaGK9L6sDk6",
+      "field": "Codes",
+      "combine_thresholds": [10, 15, 20, 30, 40, 60, 100]
+    }
+  ],
   "timing": {
     "poll_seconds": 1,
     "claim_lease_seconds": 7200,

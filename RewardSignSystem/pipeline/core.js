@@ -479,6 +479,25 @@ function loadConfig(configPath = DEFAULT_CONFIG_PATH, options = {}) {
                 'delivery.retry_max_seconds',
             ),
         },
+        deliveryTargets: (Array.isArray(config.delivery_targets) ? config.delivery_targets : []).map(
+            (target, index) => {
+                if (!target || typeof target !== 'object' || Array.isArray(target)) {
+                    throw new Error(`delivery_targets[${index}] geçerli bir obje olmalıdır.`);
+                }
+                if (!Array.isArray(target.thresholds) || !target.thresholds.length) {
+                    throw new Error(`delivery_targets[${index}].thresholds boş olmayan dizi olmalıdır.`);
+                }
+                return {
+                    thresholds: target.thresholds.map((t) => integer(t, `delivery_targets[${index}].thresholds`)),
+                    collection: String(target.collection || '').trim(),
+                    documentId: String(target.document_id || '').trim(),
+                    field: String(target.field || '').trim(),
+                    combineThresholds: Array.isArray(target.combine_thresholds)
+                        ? target.combine_thresholds.map((t) => integer(t, `delivery_targets[${index}].combine_thresholds`))
+                        : null,
+                };
+            },
+        ),
         backgroundWorkersHeadless: config.background_workers_headless !== false,
     };
 
@@ -564,6 +583,12 @@ function loadConfig(configPath = DEFAULT_CONFIG_PATH, options = {}) {
     }
     if (normalized.delivery.retryMaxSeconds < normalized.delivery.retryBaseSeconds) {
         throw new Error('delivery.retry_max_seconds, retry_base_seconds değerinden küçük olamaz.');
+    }
+    for (let i = 0; i < normalized.deliveryTargets.length; i += 1) {
+        const target = normalized.deliveryTargets[i];
+        if (!target.collection || !target.documentId || !target.field) {
+            throw new Error(`delivery_targets[${i}] collection/document_id/field boş olamaz.`);
+        }
     }
     if (normalized.timing.cloudFrontBackoffMaxSeconds < normalized.timing.cloudFrontBackoffBaseSeconds) {
         throw new Error('cloudfront_backoff_max_seconds taban sureden kucuk olamaz.');

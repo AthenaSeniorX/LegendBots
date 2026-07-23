@@ -66,7 +66,10 @@ function logErrorToFile(errorText) {
     const emailFirstPlace = 'hesaptıryavbu'; // E-posta adresinin başlangıç kısmı
     const emailType = 'outlook.com'; // E-posta adresinin uzantısı
     const numberOfAccount = 1; // Hesap sayısı
-    const password = '123321'; // Şifre
+    const password = String(process.env.LEGEND_PASSWORD || '');
+    if (!password) {
+        throw new Error('LEGEND_PASSWORD ortam değişkeni gerekli.');
+    }
     const baslangicSayisi = 45; // Başlangıç sayısı
 
     const eventUrl = 'https://newserver79-lotr.oasgames.com/activity'; // Event sayfası

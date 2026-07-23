@@ -7,3 +7,6 @@ grupla.log*
 GPUCache/
 completed_accounts.json
 completed_accounts.json.tmp
+pipeline-runtime/
+manager-errors.log*
+debug.log*

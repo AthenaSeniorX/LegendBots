@@ -5,14 +5,32 @@ const fs = require('node:fs');
 const path = require('node:path');
 const readline = require('node:readline/promises');
 const puppeteer = require('puppeteer');
+const {
+    computeRateLimitBackoffMs,
+    loadConfig,
+    networkCooldownDelay,
+    penalizeNetworkScope,
+    reserveNetworkSlot,
+} = require('./pipeline/core');
+const {
+    loadProtectedJson,
+    passwordForEmail,
+    saveProtectedJson,
+} = require('./pipeline/credentials');
 
 const ACCEPT_SELECTOR = '.team_invite .btn_m';
 const BASE_DIR = __dirname;
 const VERIFIED_ACCOUNTS_PATH = path.join(BASE_DIR, 'completed_accounts.json');
 const CONFIRMED_GROUPS_PATH = path.join(BASE_DIR, 'onaylanmis_gruplar.json');
 const INVITE_LINK_LOG_PATH = path.join(BASE_DIR, 'grupla.log');
+const GROUP_CONTINUATIONS_PATH = path.join(
+    BASE_DIR,
+    'pipeline-runtime',
+    'group-continuations.dpapi.json',
+);
+const GROUP_CONTINUATION_ENTROPY = 'LegendBots-group-continuations-v1';
 
-function readPositiveInteger(name, fallback) {
+function readPositiveInteger(name, fallback, minimum = 1) {
     const rawValue = process.env[name];
     if (rawValue === undefined || rawValue === '') {
         return fallback;
@@ -22,13 +40,14 @@ function readPositiveInteger(name, fallback) {
     if (!Number.isInteger(value) || value <= 0) {
         throw new Error(`${name} pozitif bir tam sayı olmalıdır (gelen: ${rawValue}).`);
     }
-    return value;
+    return Math.max(value, minimum);
 }
 
-const CONFIG = Object.freeze({
-    emailPrefix: process.env.LEGEND_EMAIL_PREFIX || 'hadestxz',
-    emailDomain: process.env.LEGEND_EMAIL_DOMAIN || 'outlook.com',
-    password: process.env.LEGEND_PASSWORD || '123321',
+const PIPELINE_DEFAULTS = loadConfig();
+
+const CONFIG = {
+    emailPrefix: PIPELINE_DEFAULTS.account.prefix,
+    emailDomain: PIPELINE_DEFAULTS.account.domain,
     groupSize: 4,
     loginUrl: 'https://www.oasgames.com/?a=ucenter&m=login',
     eventUrl: 'https://newserver79-lotr.oasgames.com/activity',
@@ -38,22 +57,58 @@ const CONFIG = Object.freeze({
     maxAttempts: readPositiveInteger('LEGEND_MAX_ATTEMPTS', 5),
     retryDelayMs: readPositiveInteger('LEGEND_RETRY_DELAY_MS', 3000),
     verificationAttempts: readPositiveInteger('LEGEND_VERIFY_ATTEMPTS', 5),
-    navigationIntervalMs: readPositiveInteger('LEGEND_NAVIGATION_INTERVAL_MS', 5000),
-    accountCooldownMs: readPositiveInteger('LEGEND_ACCOUNT_COOLDOWN_MS', 15000),
-    groupCooldownMs: readPositiveInteger('LEGEND_GROUP_COOLDOWN_MS', 60000),
-    cloudFrontBackoffMs: readPositiveInteger('LEGEND_CLOUDFRONT_BACKOFF_MS', 300000),
-    cloudFrontMaxAttempts: readPositiveInteger('LEGEND_CLOUDFRONT_MAX_ATTEMPTS', 4),
+    navigationIntervalMs: readPositiveInteger('LEGEND_NAVIGATION_INTERVAL_MS', 15000, 15000),
+    accountCooldownMs: readPositiveInteger('LEGEND_ACCOUNT_COOLDOWN_MS', 15000, 15000),
+    groupCooldownMs: readPositiveInteger('LEGEND_GROUP_COOLDOWN_MS', 15000, 15000),
+    cloudFrontBackoffMs: readPositiveInteger('LEGEND_CLOUDFRONT_BACKOFF_MS', 120000, 120000),
+    cloudFrontBackoffMaxMs: readPositiveInteger('LEGEND_CLOUDFRONT_BACKOFF_MAX_MS', 900000, 900000),
+    cloudFrontMaxAttempts: readPositiveInteger('LEGEND_CLOUDFRONT_MAX_ATTEMPTS', 3, 3),
     planOnly: process.argv.includes('--plan'),
-});
+};
 
-let lastTopLevelNavigationAt = 0;
+function applyRuntimeTiming(timing = {}) {
+    const integerAtLeast = (value, fallback, minimum) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? Math.max(minimum, Math.round(numeric)) : fallback;
+    };
+    CONFIG.navigationIntervalMs = integerAtLeast(
+        timing.networkIntervalMs,
+        CONFIG.navigationIntervalMs,
+        3000,
+    );
+    CONFIG.accountCooldownMs = integerAtLeast(
+        Number(timing.groupAccountCooldownSeconds) * 1000,
+        CONFIG.accountCooldownMs,
+        3000,
+    );
+    CONFIG.groupCooldownMs = integerAtLeast(
+        Number(timing.groupPackageCooldownSeconds) * 1000,
+        CONFIG.groupCooldownMs,
+        3000,
+    );
+    CONFIG.cloudFrontBackoffMs = integerAtLeast(
+        Number(timing.cloudFrontBackoffBaseSeconds) * 1000,
+        CONFIG.cloudFrontBackoffMs,
+        30000,
+    );
+    CONFIG.cloudFrontBackoffMaxMs = Math.max(
+        CONFIG.cloudFrontBackoffMs,
+        integerAtLeast(
+            Number(timing.cloudFrontBackoffMaxSeconds) * 1000,
+            CONFIG.cloudFrontBackoffMaxMs,
+            300000,
+        ),
+    );
+    return { ...CONFIG };
+}
+
 let navigationGate = Promise.resolve();
 
 function sleep(milliseconds) {
     return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-async function waitForNavigationSlot(label) {
+async function waitForNavigationSlot(label, url = CONFIG.eventUrl) {
     const previousGate = navigationGate;
     let releaseGate;
     navigationGate = new Promise((resolve) => {
@@ -62,13 +117,22 @@ async function waitForNavigationSlot(label) {
 
     await previousGate;
     try {
-        const elapsed = Date.now() - lastTopLevelNavigationAt;
-        const remaining = CONFIG.navigationIntervalMs - elapsed;
-        if (remaining > 0) {
-            console.log(`${label}: sunucuyu yormamak için ${Math.ceil(remaining / 1000)} sn bekleniyor...`);
-            await sleep(remaining);
+        const cooldownDelay = await networkCooldownDelay('group');
+        if (cooldownDelay > 0) {
+            console.log(
+                `${label}: BOT 2 403 soğuması için ` +
+                `${Math.ceil(cooldownDelay / 1000)} sn bekleniyor...`,
+            );
+            await sleep(cooldownDelay);
         }
-        lastTopLevelNavigationAt = Date.now();
+        const globalDelay = await reserveNetworkSlot(url, CONFIG.navigationIntervalMs);
+        if (globalDelay > 0) {
+            console.log(
+                `${label}: ortak CloudFront sırasında ${Math.ceil(globalDelay / 1000)} sn bekleniyor ` +
+                `(istekler arası alt sınır ${Math.ceil(CONFIG.navigationIntervalMs / 1000)} sn)...`,
+            );
+            await sleep(globalDelay);
+        }
     } finally {
         releaseGate();
     }
@@ -109,31 +173,40 @@ async function cloudFrontPageInfo(page, response) {
     return { blocked, status, ...pageInfo };
 }
 
-async function waitAfterCloudFrontBlock(attempt, label, info) {
-    const delay = Math.min(
-        CONFIG.cloudFrontBackoffMs * (2 ** Math.max(0, attempt - 1)),
-        30 * 60 * 1000,
-    );
+async function waitAfterCloudFrontBlock(attempt, label, info, options = {}) {
+    const requestedDelay = computeRateLimitBackoffMs(attempt, {
+        baseMs: CONFIG.cloudFrontBackoffMs,
+        maximumMs: CONFIG.cloudFrontBackoffMaxMs,
+    });
+    const delay = await penalizeNetworkScope('legend-global', requestedDelay, undefined, {
+        worker: 'group',
+        attempt,
+        http_status: info.status || null,
+    });
     console.warn(
         `${label}: CloudFront 403 algılandı` +
         `${info.requestId ? ` (Request ID=${info.requestId})` : ''}. ` +
-        `Aynı oturum korunarak ${Math.ceil(delay / 1000)} sn beklenecek.`,
+        `Aynı oturum korunarak yalnız BOT 2 ${Math.ceil(delay / 1000)} sn bekleyecek.`,
     );
-    await sleep(delay);
+    if (options.sleep !== false) {
+        await sleep(delay);
+    }
+    return delay;
 }
 
 async function gotoWithCloudFrontRecovery(page, url, options, label) {
     let lastInfo = null;
+    let lastRetryDelayMs = CONFIG.cloudFrontBackoffMs;
     for (let attempt = 1; attempt <= CONFIG.cloudFrontMaxAttempts; attempt += 1) {
-        await waitForNavigationSlot(label);
+        await waitForNavigationSlot(label, url);
         const response = await page.goto(url, options);
         lastInfo = await cloudFrontPageInfo(page, response);
         if (!lastInfo.blocked) {
             return response;
         }
-        if (attempt < CONFIG.cloudFrontMaxAttempts) {
-            await waitAfterCloudFrontBlock(attempt, label, lastInfo);
-        }
+        lastRetryDelayMs = await waitAfterCloudFrontBlock(attempt, label, lastInfo, {
+            sleep: attempt < CONFIG.cloudFrontMaxAttempts,
+        });
     }
 
     const error = new Error(
@@ -142,6 +215,7 @@ async function gotoWithCloudFrontRecovery(page, url, options, label) {
     );
     error.preventRelogin = true;
     error.cloudFrontBlocked = true;
+    error.retryAfterSeconds = Math.ceil(lastRetryDelayMs / 1000);
     throw error;
 }
 
@@ -185,12 +259,12 @@ function escapeRegExp(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function loadVerifiedGroups() {
-    if (!fs.existsSync(VERIFIED_ACCOUNTS_PATH)) {
-        throw new Error(`Doğrulanmış hesap dosyası bulunamadı: ${VERIFIED_ACCOUNTS_PATH}`);
+function loadVerifiedGroups(verifiedAccountsPath = VERIFIED_ACCOUNTS_PATH) {
+    if (!fs.existsSync(verifiedAccountsPath)) {
+        throw new Error(`Doğrulanmış hesap dosyası bulunamadı: ${verifiedAccountsPath}`);
     }
 
-    const sourceText = fs.readFileSync(VERIFIED_ACCOUNTS_PATH, 'utf8');
+    const sourceText = fs.readFileSync(verifiedAccountsPath, 'utf8');
     const source = parseJson(sourceText);
     if (
         !source ||
@@ -523,6 +597,232 @@ function appendGroupEvent(groupRecord, event) {
     groupRecord.updated_at = nowIso();
 }
 
+function emptyGroupContinuations() {
+    return {
+        version: 1,
+        file_type: 'legendbots_group_continuations',
+        groups: {},
+    };
+}
+
+function loadGroupContinuations(targetPath = GROUP_CONTINUATIONS_PATH) {
+    const stored = loadProtectedJson(targetPath, GROUP_CONTINUATION_ENTROPY);
+    if (stored === null) {
+        return emptyGroupContinuations();
+    }
+    if (stored.version !== 1 || stored.file_type !== 'legendbots_group_continuations' ||
+        !stored.groups || typeof stored.groups !== 'object' || Array.isArray(stored.groups)) {
+        throw new Error('Şifreli grup devam kaydının biçimi geçersiz.');
+    }
+    return stored;
+}
+
+function saveGroupContinuation(account, context, targetPath = GROUP_CONTINUATIONS_PATH) {
+    const state = loadGroupContinuations(targetPath);
+    state.groups[String(account.groupNumber)] = {
+        group_number: account.groupNumber,
+        leader_account_index: account.index,
+        leader_email: account.email,
+        leader_role_name: context.roleName,
+        role_name_source: context.roleNameSource || null,
+        invite_url: context.link,
+        invite_url_sha256: sha256(context.link),
+        server_id: String(context.serverId),
+        role_id: context.roleId || null,
+        initial_roster: Array.from(context.initialRoster || []),
+        updated_at: nowIso(),
+    };
+    saveProtectedJson(state, targetPath, GROUP_CONTINUATION_ENTROPY);
+}
+
+function removeGroupContinuation(groupNumber, targetPath = GROUP_CONTINUATIONS_PATH) {
+    if (!fs.existsSync(targetPath)) {
+        return false;
+    }
+    const state = loadGroupContinuations(targetPath);
+    const key = String(groupNumber);
+    if (!Object.prototype.hasOwnProperty.call(state.groups, key)) {
+        return false;
+    }
+    delete state.groups[key];
+    saveProtectedJson(state, targetPath, GROUP_CONTINUATION_ENTROPY);
+    return true;
+}
+
+function isGroupingAccountConfirmed(accountRecord) {
+    return accountRecord && (
+        accountRecord.grouping_status === 'leader_confirmed' ||
+        accountRecord.grouping_status === 'membership_confirmed'
+    );
+}
+
+function pendingGroupAccounts(group, groupRecord, minimumPosition = 2) {
+    return group.accounts.filter((account) => {
+        if (account.position < minimumPosition) {
+            return false;
+        }
+        const record = groupRecord.accounts.find((item) => item.position === account.position);
+        return !isGroupingAccountConfirmed(record);
+    });
+}
+
+function validateContinuationRecord(raw, group, groupRecord) {
+    if (!raw || typeof raw !== 'object') {
+        throw new Error(`${group.groupNumber}. grup için şifreli devam kaydı boş.`);
+    }
+    const leader = group.accounts.find((account) => account.position === 1);
+    const leaderRecord = groupRecord.accounts.find((account) => account.position === 1);
+    const inviteUrl = String(raw.invite_url || '');
+    let parsedUrl;
+    try {
+        parsedUrl = new URL(inviteUrl);
+    } catch (_error) {
+        throw new Error(`${group.groupNumber}. grup şifreli devam kaydındaki davet URL'si geçersiz.`);
+    }
+    const expectedEventUrl = new URL(CONFIG.eventUrl);
+    const requiredFields = ['sid', 'ud', 'type', 'shareuid', 'um'];
+    const expectedHash = groupRecord.invite && groupRecord.invite.url_sha256;
+    if (
+        Number(raw.group_number) !== group.groupNumber ||
+        Number(raw.leader_account_index) !== leader.index ||
+        String(raw.leader_email || '').toLowerCase() !== leader.email ||
+        parsedUrl.origin !== expectedEventUrl.origin ||
+        parsedUrl.pathname !== expectedEventUrl.pathname ||
+        requiredFields.some((field) => !parsedUrl.searchParams.get(field)) ||
+        parsedUrl.searchParams.get('type') !== 'team' ||
+        !expectedHash ||
+        sha256(inviteUrl) !== expectedHash ||
+        String(raw.invite_url_sha256 || '') !== expectedHash
+    ) {
+        throw new Error(
+            `${group.groupNumber}. grup şifreli devam kaydı kalıcı onay kaydıyla eşleşmiyor; ` +
+            'güvenlik için tamamlanan işlemler yeniden çalıştırılmayacak.',
+        );
+    }
+    const serverId = String(raw.server_id || parsedUrl.searchParams.get('sid') || '');
+    if (!serverId || (groupRecord.invite.server_id &&
+        String(groupRecord.invite.server_id) !== serverId)) {
+        throw new Error(`${group.groupNumber}. grup şifreli devam kaydının sunucusu eşleşmiyor.`);
+    }
+    const knownMembers = new Set([
+        ...(Array.isArray(raw.initial_roster) ? raw.initial_roster : []),
+        ...(Array.isArray(groupRecord.verification.last_server_roster)
+            ? groupRecord.verification.last_server_roster
+            : []),
+        ...groupRecord.accounts
+            .filter(isGroupingAccountConfirmed)
+            .map((account) => account.actual_role_name)
+            .filter(Boolean),
+    ]);
+    const roleName = String(
+        leaderRecord.actual_role_name || raw.leader_role_name || leader.nickname || '',
+    );
+    knownMembers.add(roleName);
+    return {
+        index: leader.index,
+        email: leader.email,
+        roleName,
+        roleNameSource: raw.role_name_source || 'encrypted_continuation',
+        link: inviteUrl,
+        serverId,
+        roleId: raw.role_id || null,
+        initialRoster: Array.from(knownMembers),
+        knownMembers,
+    };
+}
+
+function findLegacyContinuation(group, groupRecord, logPath = INVITE_LINK_LOG_PATH) {
+    if (!fs.existsSync(logPath)) {
+        return null;
+    }
+    const leader = group.accounts.find((account) => account.position === 1);
+    const lines = fs.readFileSync(logPath, 'utf8').split(/\r?\n/).filter(Boolean).reverse();
+    for (const line of lines) {
+        const entry = parseJson(line);
+        if (!entry || entry.event !== 'leader_invite_link_created' ||
+            Number(entry.group_number) !== group.groupNumber ||
+            Number(entry.leader_account_index) !== leader.index ||
+            sha256(entry.invite_url || '') !== (groupRecord.invite && groupRecord.invite.url_sha256)) {
+            continue;
+        }
+        const parsedUrl = new URL(entry.invite_url);
+        return {
+            group_number: group.groupNumber,
+            leader_account_index: leader.index,
+            leader_email: leader.email,
+            leader_role_name: entry.leader_role_name,
+            role_name_source: 'legacy_invite_log_migration',
+            invite_url: entry.invite_url,
+            invite_url_sha256: sha256(entry.invite_url),
+            server_id: parsedUrl.searchParams.get('sid'),
+            role_id: null,
+            initial_roster: groupRecord.verification.last_server_roster || [],
+            updated_at: nowIso(),
+        };
+    }
+    return null;
+}
+
+function loadLeaderContinuation(group, groupRecord, options = {}) {
+    const targetPath = options.targetPath || GROUP_CONTINUATIONS_PATH;
+    const state = loadGroupContinuations(targetPath);
+    let raw = state.groups[String(group.groupNumber)] || null;
+    if (!raw) {
+        raw = findLegacyContinuation(
+            group,
+            groupRecord,
+            options.logPath || INVITE_LINK_LOG_PATH,
+        );
+        if (!raw) {
+            return null;
+        }
+        state.groups[String(group.groupNumber)] = raw;
+        saveProtectedJson(state, targetPath, GROUP_CONTINUATION_ENTROPY);
+    }
+    return validateContinuationRecord(raw, group, groupRecord);
+}
+
+async function ensureLeaderContext(group, groupRecord, state, runId, browser) {
+    let continuation = loadLeaderContinuation(group, groupRecord);
+    if (continuation && continuation.link) {
+        console.log(
+            `[${group.groupNumber}. Grup] Şifreli devam kaydından lider davet linki başarıyla yüklendi.`,
+        );
+        return continuation;
+    }
+
+    const leaderAccount = group.accounts.find((account) => account.position === 1);
+    if (!leaderAccount) {
+        throw new Error(`${group.groupNumber}. grup için lider hesabı bulunamadı.`);
+    }
+
+    console.log(
+        `\n[${group.groupNumber}. Grup] Üye hesabı işleniyor ancak aktif lider davet linki yok!`,
+    );
+    console.log(
+        `[${group.groupNumber}. Grup] Lider hesabına (${leaderAccount.email}) gidilip davet linki otomatik oluşturuluyor...`,
+    );
+
+    const incognitoContext = await browser.createBrowserContext();
+    try {
+        const loginPage = await incognitoContext.newPage();
+        configureAutomationPage(loginPage);
+        await login(loginPage, leaderAccount.email);
+
+        const leaderContext = await createLeaderContext(loginPage, leaderAccount);
+        const leaderAccountRecord = accountRecordFor(groupRecord, 1);
+        recordLeaderSuccess(state, groupRecord, leaderAccountRecord, { leaderContext }, runId);
+
+        console.log(
+            `[${group.groupNumber}. Grup] Lider davet linki oluşturuldu ve kaydedildi. Üye işlemlerine devam ediliyor...\n`,
+        );
+        return leaderContext;
+    } finally {
+        await incognitoContext.close().catch(() => {});
+        console.log(`[${leaderAccount.email}] Lider hesabı oturumu kapatıldı.`);
+    }
+}
+
 async function promptStartSelection(sourceData) {
     const groupNumbers = sourceData.completeGroups.map((group) => group.groupNumber);
     console.log('\nDoğrulanmış ve gruplandırmaya hazır hesaplar:');
@@ -731,6 +1031,7 @@ async function postFormAndObserve(page, endpoint, fields) {
 async function postFormWithCloudFrontRecovery(page, endpoint, fields, label) {
     let lastResult = null;
     let lastInfo = null;
+    let lastRetryDelayMs = CONFIG.cloudFrontBackoffMs;
     for (let attempt = 1; attempt <= CONFIG.cloudFrontMaxAttempts; attempt += 1) {
         await waitForNavigationSlot(label);
         lastResult = await postFormAndObserve(page, endpoint, fields);
@@ -738,9 +1039,9 @@ async function postFormWithCloudFrontRecovery(page, endpoint, fields, label) {
         if (!lastInfo.blocked) {
             return lastResult;
         }
-        if (attempt < CONFIG.cloudFrontMaxAttempts) {
-            await waitAfterCloudFrontBlock(attempt, label, lastInfo);
-        }
+        lastRetryDelayMs = await waitAfterCloudFrontBlock(attempt, label, lastInfo, {
+            sleep: attempt < CONFIG.cloudFrontMaxAttempts,
+        });
     }
 
     const error = new Error(
@@ -749,6 +1050,7 @@ async function postFormWithCloudFrontRecovery(page, endpoint, fields, label) {
     );
     error.preventRelogin = true;
     error.cloudFrontBlocked = true;
+    error.retryAfterSeconds = Math.ceil(lastRetryDelayMs / 1000);
     throw error;
 }
 
@@ -987,8 +1289,9 @@ async function login(page, email, cloudFrontAttempt = 1) {
     await page.click('#fake_pass_01');
     await page.waitForSelector('#user_password', { visible: true });
     await page.click('#user_password');
-    await page.type('#user_password', CONFIG.password, { delay: 70 });
+    await page.type('#user_password', passwordForEmail(email), { delay: 70 });
 
+    await waitForNavigationSlot(`[${email}] giriş gönderimi`, CONFIG.loginUrl);
     const navigationPromise = page
         .waitForNavigation({
             waitUntil: 'networkidle2',
@@ -1032,6 +1335,12 @@ async function login(page, email, cloudFrontAttempt = 1) {
             return login(page, email, cloudFrontAttempt + 1);
         }
         if (cloudFrontInfo.blocked) {
+            const retryDelayMs = await waitAfterCloudFrontBlock(
+                cloudFrontAttempt,
+                `[${email}] giriş yanıtı`,
+                cloudFrontInfo,
+                { sleep: false },
+            );
             const error = new Error(
                 `[${email}] giriş yanıtı CloudFront 403 nedeniyle ` +
                 `${CONFIG.cloudFrontMaxAttempts} kontrollü denemede tamamlanamadı` +
@@ -1039,6 +1348,7 @@ async function login(page, email, cloudFrontAttempt = 1) {
             );
             error.preventRelogin = true;
             error.cloudFrontBlocked = true;
+            error.retryAfterSeconds = Math.ceil(retryDelayMs / 1000);
             throw error;
         }
         const visibleErrors = await page
@@ -1081,6 +1391,18 @@ async function openEventPage(page, url = CONFIG.eventUrl) {
     return state;
 }
 
+function missingAccountRoleError(expectedNickname, roleCandidates = []) {
+    const candidateCount = Array.isArray(roleCandidates) ? roleCandidates.length : 0;
+    const error = new Error(
+        `OAS etkinlik hesabında ${expectedNickname} rolü bulunamadı; ` +
+        `${candidateCount} sunucu kaydının tamamı boş. Hesap Bot 1 tarafından yeniden doğrulanmalı.`,
+    );
+    error.code = 'ACCOUNT_ROLE_MISSING';
+    error.preventRelogin = true;
+    error.accountNeedsReverification = true;
+    return error;
+}
+
 async function ensureLeaderLinkReady(page, initialState, expectedNickname) {
     const expectedRoleName = requireValue(
         expectedNickname,
@@ -1102,14 +1424,18 @@ async function ensureLeaderLinkReady(page, initialState, expectedNickname) {
     }
 
     const roleCandidates = initialState.roleCandidates || [];
+    const usableRoles = roleCandidates.filter((role) => {
+        const name = normalizedRoleName(role.roleName);
+        return role.sid && role.roleId && name && !['boş', 'bos', 'empty'].includes(name);
+    });
     const roleToBind =
-        roleCandidates.find((role) => role.roleName === expectedRoleName) ||
-        roleCandidates[0] ||
+        usableRoles.find(
+            (role) => normalizedRoleName(role.roleName) === normalizedRoleName(expectedRoleName),
+        ) ||
+        usableRoles[0] ||
         null;
     if (!roleToBind) {
-        throw new Error(
-            `Lider linki için window.sid/window.ud eksik ve bağlanabilecek rol listesi yok.`,
-        );
+        throw missingAccountRoleError(expectedRoleName, roleCandidates);
     }
 
     const roleFields = {
@@ -1218,13 +1544,7 @@ async function createLeaderContext(page, account) {
     const knownMembers = new Set(state.teamMembers);
     knownMembers.add(roleName);
 
-    console.log(`[${email}] Takım lideri doğrulandı: ${roleName}`);
-    logLeaderInviteLink(account, roleName, leaderLink);
-    console.log(
-        `[${email}] Takım davet linki oluşturuldu ` +
-        `(güvenli iz=${sha256(leaderLink).slice(0, 16)}…).`,
-    );
-    return {
+    const context = {
         index,
         email,
         roleName,
@@ -1235,6 +1555,14 @@ async function createLeaderContext(page, account) {
         initialRoster: state.teamMembers,
         knownMembers,
     };
+    saveGroupContinuation(account, context);
+    console.log(`[${email}] Takım lideri doğrulandı: ${roleName}`);
+    logLeaderInviteLink(account, roleName, leaderLink);
+    console.log(
+        `[${email}] Takım davet bağlamı şifreli kalıcı kayda alındı ` +
+        `(güvenli iz=${sha256(leaderLink).slice(0, 16)}…).`,
+    );
+    return context;
 }
 
 function normalizedRoleName(value) {
@@ -1412,10 +1740,23 @@ async function closeInvitePanelAfterServerVerification(page) {
 }
 
 function selectMemberRegistrationRole(roleCandidates, serverId, nickname) {
-    return (roleCandidates || []).find((role) =>
-        String(role.sid) === String(serverId) &&
-        normalizedRoleName(role.roleName) === normalizedRoleName(nickname)
-    ) || null;
+    const serverRoles = (roleCandidates || []).filter(
+        (role) => String(role.sid) === String(serverId),
+    );
+    const normalizedNickname = normalizedRoleName(nickname);
+    const exact = serverRoles.find(
+        (role) => normalizedRoleName(role.roleName) === normalizedNickname,
+    );
+    if (exact) {
+        return exact;
+    }
+    if (/^(existing[ _-]?account|mevcut[ _-]?hesap)$/i.test(String(nickname || '').trim())) {
+        return serverRoles.find((role) => {
+            const value = normalizedRoleName(role.roleName);
+            return value && value !== 'boş' && value !== 'bos' && value !== 'empty';
+        }) || null;
+    }
+    return null;
 }
 
 async function ensureMemberEventRegistration(page, initialState, account, leaderContext) {
@@ -1436,6 +1777,14 @@ async function ensureMemberEventRegistration(page, initialState, account, leader
         account.nickname,
     );
     if (!matchingRole) {
+        const candidates = initialState.roleCandidates || [];
+        const hasAnyUsableRole = candidates.some((role) => {
+            const name = normalizedRoleName(role.roleName);
+            return role.roleId && name && !['boş', 'bos', 'empty'].includes(name);
+        });
+        if (!hasAnyUsableRole) {
+            throw missingAccountRoleError(account.nickname, candidates);
+        }
         throw new Error(
             `Üye etkinlik kaydı için uygun rol bulunamadı. ` +
             `Beklenen sunucu=${leaderContext.serverId}, rol=${account.nickname}; adaylar=` +
@@ -1508,14 +1857,26 @@ async function joinLeaderTeam(page, account, leaderContext) {
         leaderContext,
     );
 
-    if (state.roleName && state.roleName !== account.nickname) {
+    const placeholderNickname = /^(existing[ _-]?account|mevcut[ _-]?hesap)$/i.test(
+        String(account.nickname || '').trim(),
+    );
+    const recoveredRoleName = state.roleName ||
+        (state.memberEventRegistration && state.memberEventRegistration.role_name) || '';
+    if (state.roleName && !placeholderNickname && state.roleName !== account.nickname) {
         throw new Error(
             `Katılımcı rolü doğrulanmış hesapla eşleşmiyor. ` +
             `Beklenen=${account.nickname}, görünen=${state.roleName}.`,
         );
     }
-    const roleName = account.nickname;
-    const roleNameSource = state.roleName ? 'event_dom' : 'completed_accounts.json';
+    if (placeholderNickname && !recoveredRoleName) {
+        throw new Error(
+            `Yer tutucu hesap kaydı için gerçek rol adı etkinlik sunucusundan çözülemedi.`,
+        );
+    }
+    const roleName = placeholderNickname ? recoveredRoleName : account.nickname;
+    const roleNameSource = placeholderNickname
+        ? 'event_dom_placeholder_recovery'
+        : state.roleName ? 'event_dom' : 'completed_accounts.json';
     if (membershipMatches(state, roleName, leaderContext)) {
         console.log(
             `[${email}] ${roleName} zaten doğru takımda; sunucu listesinden idempotent doğrulandı.`,
@@ -1650,6 +2011,12 @@ async function joinLeaderTeam(page, account, leaderContext) {
         if (cloudFrontInfo.blocked) {
             cloudFrontRecoveryCount += 1;
             if (attempt >= CONFIG.maxAttempts) {
+                const retryDelayMs = await waitAfterCloudFrontBlock(
+                    cloudFrontRecoveryCount,
+                    `[${email}] /agreeTeam isteği`,
+                    cloudFrontInfo,
+                    { sleep: false },
+                );
                 const error = new Error(
                     `[${email}] /agreeTeam CloudFront 403 nedeniyle ` +
                     `${CONFIG.maxAttempts} kontrollü denemede tamamlanamadı` +
@@ -1657,6 +2024,7 @@ async function joinLeaderTeam(page, account, leaderContext) {
                 );
                 error.preventRelogin = true;
                 error.cloudFrontBlocked = true;
+                error.retryAfterSeconds = Math.ceil(retryDelayMs / 1000);
                 throw error;
             }
 
@@ -1821,10 +2189,17 @@ async function launchAutomationBrowser() {
     return puppeteer.launch({
         executablePath,
         headless: CONFIG.headless,
-        defaultViewport: CONFIG.headless ? { width: 1366, height: 900 } : null,
+        defaultViewport: { width: 1366, height: 900 },
         args: CONFIG.headless
             ? ['--no-first-run', '--no-default-browser-check']
-            : ['--incognito', '--start-maximized', '--no-first-run', '--no-default-browser-check'],
+            : [
+                '--incognito',
+                '--start-minimized',
+                '--window-position=-32000,-32000',
+                '--window-size=1366,900',
+                '--no-first-run',
+                '--no-default-browser-check',
+            ],
     });
 }
 
@@ -1838,7 +2213,7 @@ async function processAccount(account, leaderContext, browser) {
         await login(loginPage, email);
 
         if (position === 1) {
-            if (!isLeader(index)) {
+            if (!account.positionAssignedByQueue && !isLeader(index)) {
                 throw new Error(`${index}. hesap 1. üye olduğu halde lider numarası kuralına uymuyor.`);
             }
             return {
@@ -1914,9 +2289,9 @@ function recordLeaderSuccess(state, groupRecord, accountRecord, result, runId) {
         initial_server_roster: context.initialRoster,
         invite_link: {
             full_url_stored: false,
-            reason: 'um ve kullanıcı kimliği içeren davet URLsi güvenlik için saklanmaz.',
+            reason: 'Tam URL yalnız Windows DPAPI ile şifreli devam kaydında tutulur.',
             sha256: sha256(context.link),
-            runtime_lifetime: 'memory_only_until_current_group_finishes',
+            runtime_lifetime: 'encrypted_until_current_group_finishes',
         },
     };
     pushAttemptHistory(accountRecord, {
@@ -1936,7 +2311,7 @@ function recordLeaderSuccess(state, groupRecord, accountRecord, result, runId) {
         query_fields: ['sid', 'ud', 'type', 'shareuid', 'um'],
         full_url_stored: false,
         url_sha256: sha256(context.link),
-        runtime_lifetime: 'memory_only_until_current_group_finishes',
+        runtime_lifetime: 'encrypted_until_current_group_finishes',
         server_id: context.serverId,
     };
     groupRecord.verification.last_server_roster = context.initialRoster;
@@ -2007,11 +2382,23 @@ async function processAccountWithRetries(
     groupRecord,
     runId,
     browser,
+    group,
 ) {
     const accountRecord = accountRecordFor(groupRecord, account.position);
     const confirmedBeforeRun =
         accountRecord.grouping_status === 'leader_confirmed' ||
         accountRecord.grouping_status === 'membership_confirmed';
+
+    if (confirmedBeforeRun) {
+        console.log(
+            `[${account.email}] Kalıcı gruplama kaydında kesin tamamlanmış; ` +
+            'hiçbir giriş veya ağ isteği yapılmadan atlandı.',
+        );
+        return { kind: 'skipped', persisted: true };
+    }
+
+    let activeLeaderContext = leaderContext;
+    let lastError = null;
 
     for (let attempt = 1; attempt <= CONFIG.maxAttempts; attempt += 1) {
         accountRecord.grouping_attempt_count += 1;
@@ -2039,7 +2426,16 @@ async function processAccountWithRetries(
 
         try {
             console.log(`\n[${account.email}] Deneme ${attempt}/${CONFIG.maxAttempts}`);
-            const result = await processAccount(account, leaderContext, browser);
+            if (account.position > 1 && (!activeLeaderContext || !activeLeaderContext.link)) {
+                activeLeaderContext = await ensureLeaderContext(
+                    group,
+                    groupRecord,
+                    state,
+                    runId,
+                    browser,
+                );
+            }
+            const result = await processAccount(account, activeLeaderContext, browser);
             if (result.kind === 'leader') {
                 recordLeaderSuccess(state, groupRecord, accountRecord, result, runId);
             } else {
@@ -2051,8 +2447,11 @@ async function processAccountWithRetries(
                 `${Math.ceil(CONFIG.accountCooldownMs / 1000)} sn güvenli soğuma uygulanıyor...`,
             );
             await sleep(CONFIG.accountCooldownMs);
-            return result;
+            return { ...result, leaderContext: activeLeaderContext || result.leaderContext };
         } catch (error) {
+            lastError = error;
+            error.accountEmail = error.accountEmail || account.email;
+            error.accountIndex = error.accountIndex || account.index;
             if (!confirmedBeforeRun) {
                 accountRecord.grouping_status = account.position === 1
                     ? 'leader_retry_pending'
@@ -2112,10 +2511,18 @@ async function processAccountWithRetries(
     }
     recomputeGroupRecord(groupRecord);
     persistConfirmedGroupState(state);
-    throw new Error(
+    const finalError = new Error(
         `${account.email} ${CONFIG.maxAttempts} denemede doğrulanamadı. ` +
-        `Güvenlik gereği sıradaki üyeye veya gruba geçilmedi.`,
+        `Güvenlik gereği sıradaki üyeye veya gruba geçilmedi.` +
+        `${lastError ? ` Son hata: ${lastError.message}` : ''}`,
     );
+    if (lastError) {
+        finalError.cause = lastError;
+        finalError.code = lastError.code;
+        finalError.preventRelogin = lastError.preventRelogin;
+        finalError.accountNeedsReverification = lastError.accountNeedsReverification;
+    }
+    throw finalError;
 }
 
 function printExecutionPlan(executionPlan, selection) {
@@ -2134,9 +2541,72 @@ function printExecutionPlan(executionPlan, selection) {
     }
 }
 
-async function main() {
-    const sourceData = loadVerifiedGroups();
-    const selection = await promptStartSelection(sourceData);
+function buildBatchSourceData(batch) {
+    if (!batch || !Number.isInteger(batch.sequence) || batch.sequence <= 0) {
+        throw new Error('Otonom grup paketinde pozitif sequence gereklidir.');
+    }
+    if (!Array.isArray(batch.accounts) || batch.accounts.length !== CONFIG.groupSize) {
+        throw new Error(`Otonom grup paketi tam olarak ${CONFIG.groupSize} hesap içermelidir.`);
+    }
+    const seenEmails = new Set();
+    const accounts = batch.accounts.map((rawAccount, offset) => {
+        const email = String(rawAccount.email || '').trim().toLowerCase();
+        const nickname = String(rawAccount.nickname || '').trim();
+        const index = Number(rawAccount.index);
+        if (!email || seenEmails.has(email) || !nickname || !Number.isSafeInteger(index) || index <= 0) {
+            throw new Error(`Otonom pakette geçersiz/tekrarlı hesap var: ${email || '(boş)'}`);
+        }
+        seenEmails.add(email);
+        return {
+            index,
+            email,
+            nickname,
+            completedAt: String(rawAccount.created_at || ''),
+            sourceVerification: { autonomous_pipeline: true, package_id: batch.id },
+            groupNumber: batch.sequence,
+            position: offset + 1,
+            positionAssignedByQueue: true,
+        };
+    });
+    const group = {
+        groupNumber: batch.sequence,
+        firstIndex: accounts[0].index,
+        lastIndex: accounts[accounts.length - 1].index,
+        accounts,
+    };
+    const serialized = JSON.stringify({ id: batch.id, sequence: batch.sequence, accounts });
+    return {
+        accounts,
+        completeGroups: [group],
+        incompleteGroups: [],
+        sourceHash: sha256(serialized),
+        sourceVersion: 1,
+        autonomousPackageId: batch.id,
+    };
+}
+
+function assertBatchGroupSlotAvailable(sourceData) {
+    if (!sourceData.autonomousPackageId || !fs.existsSync(CONFIRMED_GROUPS_PATH)) {
+        return;
+    }
+    const state = parseJson(fs.readFileSync(CONFIRMED_GROUPS_PATH, 'utf8'));
+    const group = sourceData.completeGroups[0];
+    const previous = state && state.groups && state.groups[String(group.groupNumber)];
+    if (!previous || !Array.isArray(previous.accounts)) {
+        return;
+    }
+    const previousEmails = previous.accounts.map((account) => String(account.email).toLowerCase());
+    const requestedEmails = group.accounts.map((account) => account.email);
+    if (JSON.stringify(previousEmails) !== JSON.stringify(requestedEmails)) {
+        throw new Error(
+            `${group.groupNumber}. grup numarası onaylanmis_gruplar.json içinde başka hesaplara ait. ` +
+            'Durum dosyaları elle birleştirilmeden otomasyon devam etmeyecek.',
+        );
+    }
+}
+
+async function runGrouping(sourceData, selection) {
+    assertBatchGroupSlotAvailable(sourceData);
     const executionPlan = buildExecutionPlan(sourceData, selection);
     printExecutionPlan(executionPlan, selection);
 
@@ -2196,21 +2666,29 @@ async function main() {
                 groupRecord,
                 run.run_id,
                 browser,
+                group,
             );
-            const leaderContext = leaderResult.leaderContext;
+            let leaderContext = leaderResult.leaderContext;
+            if (!leaderContext || !leaderContext.link) {
+                leaderContext = loadLeaderContinuation(group, groupRecord);
+            }
 
             const membersToProcess = group.accounts.filter(
                 (account) => account.position >= item.memberStartPosition,
             );
             for (const member of membersToProcess) {
-                await processAccountWithRetries(
+                const memberResult = await processAccountWithRetries(
                     member,
                     leaderContext,
                     state,
                     groupRecord,
                     run.run_id,
                     browser,
+                    group,
                 );
+                if (memberResult && memberResult.leaderContext) {
+                    leaderContext = memberResult.leaderContext;
+                }
             }
 
             recomputeGroupRecord(groupRecord);
@@ -2266,6 +2744,20 @@ async function main() {
     }
 }
 
+async function runGroupingBatch(batch) {
+    const sourceData = buildBatchSourceData(batch);
+    return runGrouping(sourceData, {
+        groupNumber: batch.sequence,
+        memberPosition: 1,
+    });
+}
+
+async function main() {
+    const sourceData = loadVerifiedGroups();
+    const selection = await promptStartSelection(sourceData);
+    return runGrouping(sourceData, selection);
+}
+
 if (require.main === module) {
     main().catch((error) => {
         console.error(`\nGruplama durduruldu: ${error.message}`);
@@ -2274,14 +2766,18 @@ if (require.main === module) {
 }
 
 module.exports = {
+    applyRuntimeTiming,
     buildLeaderLink,
+    buildBatchSourceData,
     buildExecutionPlan,
     isLeader,
     isCloudFrontSignature,
     logLeaderInviteLink,
     loadConfirmedGroupState,
     loadVerifiedGroups,
+    missingAccountRoleError,
     normalizedRoleName,
     persistConfirmedGroupState,
+    runGroupingBatch,
     selectMemberRegistrationRole,
 };

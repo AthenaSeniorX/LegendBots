@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "_note": "Bu hesap planı yalnızca başlangıç sihirbazında varsayılan olarak gösterilir; kullanıcı her çalışmada onaylar veya elle değiştirir.",
+  "account": {
+    "prefix": "hadestxz",
+    "domain": "outlook.com",
+    "start": 1,
+    "end": 200,
+    "python": "python",
+    "script": "VarOlanHesaplardanHesapOlusturucu_Brov.py",
+    "attempt_timeout_seconds": 1800
+  },
+  "background_workers_headless": false,
+  "delivery": {
+    "firestore_enabled": true,
+    "collection": "VIP",
+    "document_id": "NYB4ZaA54WakAQ0GFEw0",
+    "field": "VIPCodes",
+    "batch_size": 50,
+    "retry_base_seconds": 60,
+    "retry_max_seconds": 3600
+  },
+  "timing": {
+    "poll_seconds": 1,
+    "claim_lease_seconds": 7200,
+    "cloudfront_max_attempts": 3
+  },
+  "monitoring": {
+    "heartbeat_seconds": 10,
+    "stale_seconds": 120,
+    "empty_pool_warning_seconds": 900,
+    "repeat_error_seconds": 900,
+    "auto_restart_workers": true,
+    "restart_unhealthy_seconds": 75,
+    "restart_cooldown_seconds": 120,
+    "hung_worker_seconds": 300
+  }
+}

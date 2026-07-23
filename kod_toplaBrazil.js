@@ -13,7 +13,10 @@ hesaptıryavbu1-400
     const emailFirstPlace = 'hadestxz';
     const emailType = 'outlook.com';
     const numberOfAccount = 100; // Hesap sayısı
-    const password = '123321'; // Şifre
+    const password = String(process.env.LEGEND_PASSWORD || '');
+    if (!password) {
+        throw new Error('LEGEND_PASSWORD ortam değişkeni gerekli.');
+    }
     const baslangicSayisi = 1; // Başlangıç sayısı
     const eventUrl = 'https://novoevento78-lobr.oasgames.com/activity';
     const timeout = 30000; // 30 saniye zaman aşımı

@@ -9,7 +9,7 @@ import string
 ## Legend Online Helper için özel olarak geliştirilmiştir Bot 1
 ## Otomatik hesap(lar) kurmak için yapılmıştır.
 def generateNickname():
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=7))
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=7))
 
 legendOnlineFlag = False
 print("\n")
@@ -33,7 +33,7 @@ if(len(emailFirstPlace) <= 8 and len(emailFirstPlace) >= 3):
             print("\n\n")
             for i in range(baslangicSayisi, (baslangicSayisi + numberOfAccount)):
                 app =  application.Application()
-                app.start("C:\Program Files (x86)\Legend Online\Legend Online.exe")
+                app.start(r"C:\Program Files (x86)\Legend Online\Legend Online.exe")
                 email = emailFirstPlace + str(i) + "@" + emailType
                 pyperclip.copy(email)
                 time.sleep(5)
@@ -80,4 +80,3 @@ else:
     print("Hata! En fazla 8 harf ve en az 3 harf girilmeli.")
     print("\n\n")
     os.system("PAUSE")
-

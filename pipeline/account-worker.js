@@ -60,7 +60,7 @@ async function synchronizeCompletedAccounts(context) {
     return imported;
 }
 
-function runPythonAttempt(context, index) {
+function runPythonAttempt(context, index, options = {}) {
     const config = context.store.config;
     const args = [
         config.account.script,
@@ -70,6 +70,9 @@ function runPythonAttempt(context, index) {
         '--count', '1',
         '--max-account-attempts', '1',
     ];
+    if (options.reverifyCompleted) {
+        args.push('--reverify-completed');
+    }
     return new Promise((resolve, reject) => {
         const email = emailFor(config, index);
         const childEnvironment = {
@@ -123,6 +126,34 @@ async function nextMissingIndex(context) {
     return null;
 }
 
+async function nextAccountJob(context) {
+    const state = await context.store.snapshot();
+    const requested = Object.values(state.accounts)
+        .filter((account) => account.reverification?.status === 'requested')
+        .sort((left, right) => {
+            const byTime = Date.parse(left.reverification.requested_at || '') -
+                Date.parse(right.reverification.requested_at || '');
+            return byTime || left.index - right.index;
+        })[0];
+    if (requested) {
+        return { index: requested.index, email: requested.email, reverifyCompleted: true };
+    }
+    const index = await nextMissingIndex(context);
+    return index === null
+        ? null
+        : { index, email: emailFor(context.store.config, index), reverifyCompleted: false };
+}
+
+function completedAccountDetails(email) {
+    const payload = readJson(COMPLETED_ACCOUNTS_PATH);
+    const details = payload && payload.completed_accounts &&
+        payload.completed_accounts[String(email).trim().toLowerCase()];
+    if (!details || !String(details.nickname || '').trim()) {
+        throw new Error(`${email} istemci doğrulamasından sonra tamamlanmış hesap kaydı bulunamadı.`);
+    }
+    return details;
+}
+
 async function main() {
     const context = createWorkerContext('account');
     let releaseSingleton;
@@ -141,20 +172,21 @@ async function main() {
             try {
                 context.heartbeat({ status: 'running', action: 'sync_completed_accounts', last_error: null });
                 await synchronizeCompletedAccounts(context);
-                const index = await nextMissingIndex(context);
-                if (index === null) {
+                const job = await nextAccountJob(context);
+                if (!job) {
                     context.heartbeat({ status: 'waiting', action: 'account_range_exhausted' });
                     await idleUntilStopped(context, context.store.config.timing.pollSeconds);
                     continue;
                 }
 
-                const email = emailFor(context.store.config, index);
+                const { index, email, reverifyCompleted } = job;
+                const timing = context.store.effectiveTiming();
                 // GUI tabanlı üretici rezervasyondan yaklaşık 5-10 saniye sonra
                 // gerçek login POST'unu gönderir. İki aralık ayırmak, diğer ağ
                 // botlarının bu görünmeyen POST ile çakışmasını engeller.
                 const accountNetworkWindowMs = Math.max(
-                    context.store.config.timing.networkIntervalMs * 2,
-                    30000,
+                    timing.networkIntervalMs * 2,
+                    6000,
                 );
                 const cooldownDelay = await networkCooldownDelay(
                     'account',
@@ -165,6 +197,8 @@ async function main() {
                         status: 'waiting',
                         action: 'account_403_cooldown',
                         current_email: email,
+                        wait_seconds: Math.ceil(cooldownDelay / 1000),
+                        wait_until: new Date(Date.now() + cooldownDelay).toISOString(),
                     });
                     await idleUntilStopped(context, Math.ceil(cooldownDelay / 1000));
                 }
@@ -174,7 +208,13 @@ async function main() {
                     context.store.runtimeDir,
                 );
                 if (gateDelay > 0) {
-                    context.heartbeat({ status: 'waiting', action: 'global_rate_limit', current_email: email });
+                    context.heartbeat({
+                        status: 'waiting',
+                        action: 'global_rate_limit',
+                        current_email: email,
+                        wait_seconds: Math.ceil(gateDelay / 1000),
+                        wait_until: new Date(Date.now() + gateDelay).toISOString(),
+                    });
                     await idleUntilStopped(context, Math.ceil(gateDelay / 1000));
                 }
                 if (context.isStopped()) {
@@ -183,22 +223,35 @@ async function main() {
 
                 context.heartbeat({
                     status: 'running',
-                    action: 'creating_account',
+                    action: reverifyCompleted ? 'reverifying_account_role' : 'creating_account',
                     current_email: email,
                     current_index: index,
                     action_started_at: new Date().toISOString(),
                 });
-                console.log(`[BOT 1] Hesap işleniyor: ${email}`);
-                await runPythonAttempt(context, index);
-                await synchronizeCompletedAccounts(context);
+                console.log(
+                    `[BOT 1] ${reverifyCompleted ? 'OAS rolü yeniden doğrulanıyor' : 'Hesap işleniyor'}: ${email}`,
+                );
+                await runPythonAttempt(context, index, { reverifyCompleted });
+                if (reverifyCompleted) {
+                    const details = completedAccountDetails(email);
+                    await context.store.completeAccountReverification({
+                        email,
+                        index,
+                        nickname: String(details.nickname).trim(),
+                        created_at: details.completed_at || new Date().toISOString(),
+                    });
+                } else {
+                    await synchronizeCompletedAccounts(context);
+                }
                 const state = await context.store.snapshot();
                 if (!state.accounts[email]) {
                     throw new Error(`Python başarılı döndü ancak ${email} tamamlanmış havuzuna yazılmadı.`);
                 }
 
+                const successTiming = context.store.effectiveTiming();
                 const delay = randomBetween(
-                    context.store.config.timing.accountSuccessMinSeconds,
-                    context.store.config.timing.accountSuccessMaxSeconds,
+                    successTiming.accountSuccessMinSeconds,
+                    successTiming.accountSuccessMaxSeconds,
                 );
                 console.log(`[BOT 1] ${email} hazır havuza eklendi. Sonraki hesap için ${delay} sn güvenli bekleme.`);
                 context.heartbeat({
@@ -206,15 +259,18 @@ async function main() {
                     action: 'success_cooldown',
                     current_email: null,
                     last_success_at: new Date().toISOString(),
+                    wait_seconds: delay,
+                    wait_until: new Date(Date.now() + delay * 1000).toISOString(),
                 });
                 await idleUntilStopped(context, delay);
             } catch (error) {
-                const index = await nextMissingIndex(context);
-                const email = index === null ? null : emailFor(context.store.config, index);
+                const job = await nextAccountJob(context);
+                const email = job && job.email;
                 const failure = email
                     ? await context.store.recordProducerFailure(email, error.message)
                     : { count: 1 };
-                const delay = computeBackoffSeconds(failure.count, context.store.config);
+                const timing = context.store.effectiveTiming();
+                const delay = computeBackoffSeconds(failure.count, { ...context.store.config, timing });
                 writeWorkerError(context.store, 'account', error, { email, retry_seconds: delay });
                 console.error(`[BOT 1] HATA: ${error.message} | ${delay} sn sonra yeniden denenecek.`);
                 context.heartbeat({
@@ -223,6 +279,7 @@ async function main() {
                     current_email: email,
                     last_error: error.message,
                     retry_seconds: delay,
+                    wait_until: new Date(Date.now() + delay * 1000).toISOString(),
                 });
                 await idleUntilStopped(context, delay);
             }
@@ -240,4 +297,10 @@ if (require.main === module) {
     });
 }
 
-module.exports = { emailFor, indexFromEmail, synchronizeCompletedAccounts };
+module.exports = {
+    completedAccountDetails,
+    emailFor,
+    indexFromEmail,
+    nextAccountJob,
+    synchronizeCompletedAccounts,
+};

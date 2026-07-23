@@ -9,6 +9,9 @@ const {
 } = require('./worker-common');
 
 function configureEnvironment(context) {
+    const timing = typeof context.store.effectiveTiming === 'function'
+        ? context.store.effectiveTiming()
+        : context.store.config.timing;
     process.env.LEGEND_SIGN_HEADLESS = context.store.config.backgroundWorkersHeadless
         ? 'true'
         : 'false';
@@ -16,25 +19,25 @@ function configureEnvironment(context) {
         const current = Number.parseInt(process.env[name] || '', 10);
         process.env[name] = String(Number.isInteger(current) ? Math.max(current, minimum) : minimum);
     };
-    const networkMinimum = context.store.config.timing.networkIntervalMs;
+    const networkMinimum = timing.networkIntervalMs;
     enforceMinimum('LEGEND_NAVIGATION_INTERVAL_MS', networkMinimum);
     enforceMinimum(
         'LEGEND_SIGN_ACCOUNT_COOLDOWN_MS',
-        context.store.config.timing.signAccountCooldownSeconds * 1000,
+        timing.signAccountCooldownSeconds * 1000,
     );
     enforceMinimum('LEGEND_SIGN_RETRY_DELAY_MS', networkMinimum);
     enforceMinimum('LEGEND_SIGN_VERIFICATION_DELAY_MS', networkMinimum);
     enforceMinimum(
         'LEGEND_CLOUDFRONT_BACKOFF_MS',
-        context.store.config.timing.cloudFrontBackoffBaseSeconds * 1000,
+        timing.cloudFrontBackoffBaseSeconds * 1000,
     );
     enforceMinimum(
         'LEGEND_CLOUDFRONT_BACKOFF_MAX_MS',
-        context.store.config.timing.cloudFrontBackoffMaxSeconds * 1000,
+        timing.cloudFrontBackoffMaxSeconds * 1000,
     );
     enforceMinimum(
         'LEGEND_CLOUDFRONT_MAX_ATTEMPTS',
-        context.store.config.timing.cloudFrontMaxAttempts,
+        timing.cloudFrontMaxAttempts,
     );
 }
 
@@ -49,7 +52,10 @@ async function main() {
         return;
     }
     configureEnvironment(context);
-    const { runSignPackage } = require('../sign');
+    const { applyRuntimeTiming, runSignPackage } = require('../sign');
+    const refreshTiming = () => applyRuntimeTiming(context.store.effectiveTiming());
+    refreshTiming();
+    context.addHeartbeatHook(refreshTiming);
     context.start();
     console.log('[BOT 3] Dörtlü sign worker başladı (arka plan Chrome).');
 
@@ -94,22 +100,26 @@ async function main() {
                 }
                 await context.store.completeSigning(group.id, group.claimToken);
                 console.log(`[BOT 3] ${group.id} içindeki dört hesabın sign işlemi kesin doğrulandı.`);
+                const packageCooldown = context.store.effectiveTiming().signPackageCooldownSeconds;
                 context.heartbeat({
                     status: 'waiting',
                     action: 'sign_package_cooldown',
                     current_group: null,
                     current_accounts: [],
                     last_success_at: new Date().toISOString(),
+                    wait_seconds: packageCooldown,
+                    wait_until: new Date(Date.now() + packageCooldown * 1000).toISOString(),
                 });
                 await idleUntilStopped(
                     context,
-                    context.store.config.timing.signPackageCooldownSeconds,
+                    packageCooldown,
                 );
             } catch (error) {
-                let delay = context.store.config.timing.retryBaseSeconds;
+                const timing = context.store.effectiveTiming();
+                let delay = timing.retryBaseSeconds;
                 if (group && group.claimToken) {
                     const attempt = Number(group.signAttemptCount || 1);
-                    delay = computeBackoffSeconds(attempt, context.store.config);
+                    delay = computeBackoffSeconds(attempt, { ...context.store.config, timing });
                     if (Number.isFinite(error.retryAfterSeconds)) {
                         delay = Math.max(delay, Math.ceil(error.retryAfterSeconds));
                     }
@@ -127,6 +137,7 @@ async function main() {
                     current_group: group && group.id,
                     last_error: error.message,
                     retry_seconds: delay,
+                    wait_until: new Date(Date.now() + delay * 1000).toISOString(),
                 });
                 await idleUntilStopped(context, delay);
             }

@@ -45,7 +45,7 @@ function readPositiveInteger(name, fallback, minimum = 1) {
 
 const PIPELINE_DEFAULTS = loadConfig();
 
-const CONFIG = Object.freeze({
+const CONFIG = {
     emailPrefix: PIPELINE_DEFAULTS.account.prefix,
     emailDomain: PIPELINE_DEFAULTS.account.domain,
     groupSize: 4,
@@ -64,7 +64,43 @@ const CONFIG = Object.freeze({
     cloudFrontBackoffMaxMs: readPositiveInteger('LEGEND_CLOUDFRONT_BACKOFF_MAX_MS', 900000, 900000),
     cloudFrontMaxAttempts: readPositiveInteger('LEGEND_CLOUDFRONT_MAX_ATTEMPTS', 3, 3),
     planOnly: process.argv.includes('--plan'),
-});
+};
+
+function applyRuntimeTiming(timing = {}) {
+    const integerAtLeast = (value, fallback, minimum) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? Math.max(minimum, Math.round(numeric)) : fallback;
+    };
+    CONFIG.navigationIntervalMs = integerAtLeast(
+        timing.networkIntervalMs,
+        CONFIG.navigationIntervalMs,
+        3000,
+    );
+    CONFIG.accountCooldownMs = integerAtLeast(
+        Number(timing.groupAccountCooldownSeconds) * 1000,
+        CONFIG.accountCooldownMs,
+        3000,
+    );
+    CONFIG.groupCooldownMs = integerAtLeast(
+        Number(timing.groupPackageCooldownSeconds) * 1000,
+        CONFIG.groupCooldownMs,
+        3000,
+    );
+    CONFIG.cloudFrontBackoffMs = integerAtLeast(
+        Number(timing.cloudFrontBackoffBaseSeconds) * 1000,
+        CONFIG.cloudFrontBackoffMs,
+        30000,
+    );
+    CONFIG.cloudFrontBackoffMaxMs = Math.max(
+        CONFIG.cloudFrontBackoffMs,
+        integerAtLeast(
+            Number(timing.cloudFrontBackoffMaxSeconds) * 1000,
+            CONFIG.cloudFrontBackoffMaxMs,
+            300000,
+        ),
+    );
+    return { ...CONFIG };
+}
 
 let navigationGate = Promise.resolve();
 
@@ -746,6 +782,47 @@ function loadLeaderContinuation(group, groupRecord, options = {}) {
     return validateContinuationRecord(raw, group, groupRecord);
 }
 
+async function ensureLeaderContext(group, groupRecord, state, runId, browser) {
+    let continuation = loadLeaderContinuation(group, groupRecord);
+    if (continuation && continuation.link) {
+        console.log(
+            `[${group.groupNumber}. Grup] Şifreli devam kaydından lider davet linki başarıyla yüklendi.`,
+        );
+        return continuation;
+    }
+
+    const leaderAccount = group.accounts.find((account) => account.position === 1);
+    if (!leaderAccount) {
+        throw new Error(`${group.groupNumber}. grup için lider hesabı bulunamadı.`);
+    }
+
+    console.log(
+        `\n[${group.groupNumber}. Grup] Üye hesabı işleniyor ancak aktif lider davet linki yok!`,
+    );
+    console.log(
+        `[${group.groupNumber}. Grup] Lider hesabına (${leaderAccount.email}) gidilip davet linki otomatik oluşturuluyor...`,
+    );
+
+    const incognitoContext = await browser.createBrowserContext();
+    try {
+        const loginPage = await incognitoContext.newPage();
+        configureAutomationPage(loginPage);
+        await login(loginPage, leaderAccount.email);
+
+        const leaderContext = await createLeaderContext(loginPage, leaderAccount);
+        const leaderAccountRecord = accountRecordFor(groupRecord, 1);
+        recordLeaderSuccess(state, groupRecord, leaderAccountRecord, { leaderContext }, runId);
+
+        console.log(
+            `[${group.groupNumber}. Grup] Lider davet linki oluşturuldu ve kaydedildi. Üye işlemlerine devam ediliyor...\n`,
+        );
+        return leaderContext;
+    } finally {
+        await incognitoContext.close().catch(() => {});
+        console.log(`[${leaderAccount.email}] Lider hesabı oturumu kapatıldı.`);
+    }
+}
+
 async function promptStartSelection(sourceData) {
     const groupNumbers = sourceData.completeGroups.map((group) => group.groupNumber);
     console.log('\nDoğrulanmış ve gruplandırmaya hazır hesaplar:');
@@ -1314,6 +1391,18 @@ async function openEventPage(page, url = CONFIG.eventUrl) {
     return state;
 }
 
+function missingAccountRoleError(expectedNickname, roleCandidates = []) {
+    const candidateCount = Array.isArray(roleCandidates) ? roleCandidates.length : 0;
+    const error = new Error(
+        `OAS etkinlik hesabında ${expectedNickname} rolü bulunamadı; ` +
+        `${candidateCount} sunucu kaydının tamamı boş. Hesap Bot 1 tarafından yeniden doğrulanmalı.`,
+    );
+    error.code = 'ACCOUNT_ROLE_MISSING';
+    error.preventRelogin = true;
+    error.accountNeedsReverification = true;
+    return error;
+}
+
 async function ensureLeaderLinkReady(page, initialState, expectedNickname) {
     const expectedRoleName = requireValue(
         expectedNickname,
@@ -1335,14 +1424,18 @@ async function ensureLeaderLinkReady(page, initialState, expectedNickname) {
     }
 
     const roleCandidates = initialState.roleCandidates || [];
+    const usableRoles = roleCandidates.filter((role) => {
+        const name = normalizedRoleName(role.roleName);
+        return role.sid && role.roleId && name && !['boş', 'bos', 'empty'].includes(name);
+    });
     const roleToBind =
-        roleCandidates.find((role) => role.roleName === expectedRoleName) ||
-        roleCandidates[0] ||
+        usableRoles.find(
+            (role) => normalizedRoleName(role.roleName) === normalizedRoleName(expectedRoleName),
+        ) ||
+        usableRoles[0] ||
         null;
     if (!roleToBind) {
-        throw new Error(
-            `Lider linki için window.sid/window.ud eksik ve bağlanabilecek rol listesi yok.`,
-        );
+        throw missingAccountRoleError(expectedRoleName, roleCandidates);
     }
 
     const roleFields = {
@@ -1684,6 +1777,14 @@ async function ensureMemberEventRegistration(page, initialState, account, leader
         account.nickname,
     );
     if (!matchingRole) {
+        const candidates = initialState.roleCandidates || [];
+        const hasAnyUsableRole = candidates.some((role) => {
+            const name = normalizedRoleName(role.roleName);
+            return role.roleId && name && !['boş', 'bos', 'empty'].includes(name);
+        });
+        if (!hasAnyUsableRole) {
+            throw missingAccountRoleError(account.nickname, candidates);
+        }
         throw new Error(
             `Üye etkinlik kaydı için uygun rol bulunamadı. ` +
             `Beklenen sunucu=${leaderContext.serverId}, rol=${account.nickname}; adaylar=` +
@@ -2281,6 +2382,7 @@ async function processAccountWithRetries(
     groupRecord,
     runId,
     browser,
+    group,
 ) {
     const accountRecord = accountRecordFor(groupRecord, account.position);
     const confirmedBeforeRun =
@@ -2294,6 +2396,9 @@ async function processAccountWithRetries(
         );
         return { kind: 'skipped', persisted: true };
     }
+
+    let activeLeaderContext = leaderContext;
+    let lastError = null;
 
     for (let attempt = 1; attempt <= CONFIG.maxAttempts; attempt += 1) {
         accountRecord.grouping_attempt_count += 1;
@@ -2321,7 +2426,16 @@ async function processAccountWithRetries(
 
         try {
             console.log(`\n[${account.email}] Deneme ${attempt}/${CONFIG.maxAttempts}`);
-            const result = await processAccount(account, leaderContext, browser);
+            if (account.position > 1 && (!activeLeaderContext || !activeLeaderContext.link)) {
+                activeLeaderContext = await ensureLeaderContext(
+                    group,
+                    groupRecord,
+                    state,
+                    runId,
+                    browser,
+                );
+            }
+            const result = await processAccount(account, activeLeaderContext, browser);
             if (result.kind === 'leader') {
                 recordLeaderSuccess(state, groupRecord, accountRecord, result, runId);
             } else {
@@ -2333,8 +2447,11 @@ async function processAccountWithRetries(
                 `${Math.ceil(CONFIG.accountCooldownMs / 1000)} sn güvenli soğuma uygulanıyor...`,
             );
             await sleep(CONFIG.accountCooldownMs);
-            return result;
+            return { ...result, leaderContext: activeLeaderContext || result.leaderContext };
         } catch (error) {
+            lastError = error;
+            error.accountEmail = error.accountEmail || account.email;
+            error.accountIndex = error.accountIndex || account.index;
             if (!confirmedBeforeRun) {
                 accountRecord.grouping_status = account.position === 1
                     ? 'leader_retry_pending'
@@ -2394,10 +2511,18 @@ async function processAccountWithRetries(
     }
     recomputeGroupRecord(groupRecord);
     persistConfirmedGroupState(state);
-    throw new Error(
+    const finalError = new Error(
         `${account.email} ${CONFIG.maxAttempts} denemede doğrulanamadı. ` +
-        `Güvenlik gereği sıradaki üyeye veya gruba geçilmedi.`,
+        `Güvenlik gereği sıradaki üyeye veya gruba geçilmedi.` +
+        `${lastError ? ` Son hata: ${lastError.message}` : ''}`,
     );
+    if (lastError) {
+        finalError.cause = lastError;
+        finalError.code = lastError.code;
+        finalError.preventRelogin = lastError.preventRelogin;
+        finalError.accountNeedsReverification = lastError.accountNeedsReverification;
+    }
+    throw finalError;
 }
 
 function printExecutionPlan(executionPlan, selection) {
@@ -2541,21 +2666,29 @@ async function runGrouping(sourceData, selection) {
                 groupRecord,
                 run.run_id,
                 browser,
+                group,
             );
-            const leaderContext = leaderResult.leaderContext;
+            let leaderContext = leaderResult.leaderContext;
+            if (!leaderContext || !leaderContext.link) {
+                leaderContext = loadLeaderContinuation(group, groupRecord);
+            }
 
             const membersToProcess = group.accounts.filter(
                 (account) => account.position >= item.memberStartPosition,
             );
             for (const member of membersToProcess) {
-                await processAccountWithRetries(
+                const memberResult = await processAccountWithRetries(
                     member,
                     leaderContext,
                     state,
                     groupRecord,
                     run.run_id,
                     browser,
+                    group,
                 );
+                if (memberResult && memberResult.leaderContext) {
+                    leaderContext = memberResult.leaderContext;
+                }
             }
 
             recomputeGroupRecord(groupRecord);
@@ -2633,6 +2766,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+    applyRuntimeTiming,
     buildLeaderLink,
     buildBatchSourceData,
     buildExecutionPlan,
@@ -2641,6 +2775,7 @@ module.exports = {
     logLeaderInviteLink,
     loadConfirmedGroupState,
     loadVerifiedGroups,
+    missingAccountRoleError,
     normalizedRoleName,
     persistConfirmedGroupState,
     runGroupingBatch,

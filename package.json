@@ -7,7 +7,7 @@
     "grupla": "node grupla.js",
     "grupla:plan": "node grupla.js --plan",
     "test:grupla": "node --test grupla.test.js",
-    "test": "node --test grupla.test.js sign.test.js pipeline/pipeline.test.js pipeline/credentials.test.js && python -m unittest test_account_creator.py"
+    "test": "node --test grupla.test.js sign.test.js reward.test.js pipeline/pipeline.test.js pipeline/manager-control.test.js pipeline/reward-reconciler.test.js pipeline/code-delivery.test.js pipeline/credentials.test.js pipeline/start-autonomous-ui.test.js && python -m unittest test_account_creator.py"
   },
   "dependencies": {
     "firebase": "^10.14.1",

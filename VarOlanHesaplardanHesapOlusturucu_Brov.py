@@ -113,7 +113,11 @@ class ClientConfig:
     character_wait: float = 3.0
     game_entry_timeout: float = 90.0
     game_ready_confidence: float = 0.72
-    post_verification_wait: float = 0.75
+    # İki mavi yükleme çubuğu karakter girişinin başladığını kanıtlar; ancak
+    # istemciyi hemen kapatmak bazı hesaplarda rolün OAS rol listesine hiç
+    # yazılmamasına yol açabiliyor. Sunucu tarafı kaydın tamamlanması için
+    # doğrulamadan sonra istemciyi kısa bir süre daha açık tut.
+    post_verification_wait: float = 12.0
 
     # Legend Online penceresi içindeki sabit oranlar. Mutlak ekran koordinatı
     # kullanılmadığı için pencere farklı bir konumda açılsa da geçerlidir.
@@ -328,6 +332,38 @@ class ProgressStore:
         self._persist()
         LOGGER.info("Hesap kullanıcı onayıyla tamamlandı: %s", email)
 
+    def mark_for_reverification(self, email: str, reason: str) -> bool:
+        """Tamamlanmış görünen hesabı, nickname'i kaybetmeden yeniden denetler."""
+        normalized_email = email.strip().lower()
+        completed = self.accounts.pop(normalized_email, None)
+        if completed is None:
+            return False
+
+        nickname = str(completed.get("nickname", "")).strip()
+        if not nickname:
+            self.accounts[normalized_email] = completed
+            raise AutomationError(
+                f"Yeniden doğrulanacak tamamlanmış hesap nickname içermiyor: {normalized_email}"
+            )
+
+        requested_at = datetime.now().astimezone().isoformat(timespec="seconds")
+        self.pending_verification[normalized_email] = {
+            "nickname": nickname,
+            "submitted_at": requested_at,
+            "reverification_requested_at": requested_at,
+            "reverification_reason": str(reason)[:1000],
+            "previous_completed_at": completed.get("completed_at"),
+            "previous_verification": completed.get("verification"),
+        }
+        self.failed_attempts.pop(normalized_email, None)
+        self._persist()
+        LOGGER.warning(
+            "Tamamlanmış hesap OAS rolü için yeniden doğrulamaya alındı: %s | neden=%s",
+            normalized_email,
+            reason,
+        )
+        return True
+
     def record_failure(self, email: str, error: str) -> int:
         normalized_email = email.strip().lower()
         previous = self.failed_attempts.get(normalized_email, {})
@@ -365,8 +401,8 @@ def setup_logging() -> None:
 
 
 def generate_nickname(length: int = 12) -> str:
-    """Yalnızca A-Z ve 1-9 karakterlerinden oluşan oyun adını üretir."""
-    alphabet = string.ascii_uppercase + "123456789"
+    """A-Z, a-z ve 0-9 karakterlerinden oluşan oyun adını üretir."""
+    alphabet = string.ascii_letters + string.digits
     return "".join(random.choices(alphabet, k=length))
 
 
@@ -1520,8 +1556,7 @@ def run_desktop_client(
                 email,
                 existing_evidence.method,
             )
-            if existing_evidence.method != "two_blue_loading_bars":
-                time.sleep(config.post_verification_wait)
+            time.sleep(config.post_verification_wait)
             return nickname
 
         # "7roll" benzeri yükleme ekranının bittiğini zar simgesi kanıtladı.
@@ -1548,7 +1583,9 @@ def run_desktop_client(
             region=region,
         )
 
-        nickname = generate_nickname()
+        # OAS rol denetiminden dönmüş bir hesapta aynı nickname'i korumak,
+        # pipeline paketinin kalıcı kimliğiyle istemci kaydını eşleştirir.
+        nickname = known_nickname or generate_nickname()
         _type_verified_nickname(nickname, dice_location)
         LOGGER.info("Karakter adı hazırlandı ve doğrulandı: %s", nickname)
         time.sleep(config.character_wait)
@@ -1583,8 +1620,7 @@ def run_desktop_client(
             nickname,
             entry_evidence.method,
         )
-        if entry_evidence.method != "two_blue_loading_bars":
-            time.sleep(config.post_verification_wait)
+        time.sleep(config.post_verification_wait)
         return nickname
     except KeyboardInterrupt:
         raise
@@ -1632,6 +1668,14 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Tarayıcı/istemci açmadan bağımlılıkları ve dosyaları kontrol et",
     )
+    parser.add_argument(
+        "--reverify-completed",
+        action="store_true",
+        help=(
+            "Seçilen tamamlanmış hesabı nickname'i koruyarak yeniden istemci doğrulamasına al; "
+            "yalnız otomatik OAS rol recovery akışı için"
+        ),
+    )
     return parser
 
 
@@ -1678,6 +1722,9 @@ def main(argv: list[str] | None = None) -> int:
     selected_emails = [
         f"{args.prefix}{args.start + offset}@{args.domain}" for offset in range(args.count)
     ]
+    if args.reverify_completed:
+        for email in selected_emails:
+            progress.mark_for_reverification(email, "OAS etkinlik rolü bulunamadı")
     pending_emails = [email for email in selected_emails if not progress.is_completed(email)]
     if not pending_emails:
         LOGGER.info(
@@ -1695,6 +1742,9 @@ def main(argv: list[str] | None = None) -> int:
 
     password = args.password or os.environ.get("LEGEND_PASSWORD")
     if not password:
+        if not sys.stdin.isatty():
+            LOGGER.error("LEGEND_PASSWORD ortam değişkeni eksik ve süreç katımsız (non-interactive).")
+            return 2
         password = getpass("Mevcut hesapların ortak şifresi: ")
     if not password:
         LOGGER.error("Şifre boş olamaz.")

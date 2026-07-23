@@ -1,6 +1,6 @@
 # LegendBots mevcut hesap giriş otomasyonu
 
-> Üç bot + manager şeklindeki kesintisiz otonom kullanım, hazır işlem seed şeması ve tek komutla dört terminal başlatma için [AUTONOMOUS_TR.md](./AUTONOMOUS_TR.md) dosyasına bakın.
+> Dört çalışma botu + manager şeklindeki kesintisiz otonom kullanım, 24 saatlik reward döngüsü, hazır işlem seed şeması ve tek komutla beş bot rolünü başlatma için [AUTONOMOUS_TR.md](./AUTONOMOUS_TR.md) dosyasına bakın. Operatöre yalnız Manager ekranı gösterilir; worker hostları arka planda çalışır.
 
 Bu sürüm hesap kaydı oluşturmaz. Belirtilen mevcut hesaplarla sırasıyla normal
 Chrome gizli penceresinde ve Legend Online masaüstü istemcisinde giriş yapar.
@@ -178,9 +178,13 @@ node .\automation.js --disable-worker account
 node .\automation.js --enable-worker account
 ```
 
-Devre dışı bırakılan worker supervisor tarafından yeniden başlatılmaz. Beklenmedik
-host kaybında supervisor kısa geçici kesintileri filtreledikten sonra workerı
-otomatik geri getirir; manager havuzları ve iş durumlarını denetlemeyi sürdürür.
+Devre dışı bırakılan worker manager tarafından yeniden başlatılmaz. Bot 0 Manager
+v2.0 tek PowerShell ekranında iş yüzdesi, kuyruk baskısı, dakikalık hız, 403 riski,
+verimlilik skoru ve dinamik beklemeleri gösterir. Şişen havuza süreli öncelik
+verdiğinde diğer botları aktif işlerini yarıda kesmeden geçici olarak bekletir;
+bu geçici karar operatörün açık/kapalı tercihinden ayrı saklanır. Beklenmedik
+çalışma-botu host kaybında manager kısa geçici kesintileri filtreledikten sonra
+workerı otomatik geri getirir; bağımsız supervisor yalnız manager'ı gözetler.
 Manager'ın salt-okunur denetim turları ana state dosyasını
 gereksiz yazmadığı için Windows dosya kilidi ve disk yükü düşüktür.
 Canlı görünen fakat beş dakika heartbeat üretmeyen bir worker asılı kabul edilir;
@@ -192,10 +196,22 @@ yazılmaz; Windows DPAPI ile yalnızca aynı Windows kullanıcısının çözebi
 tarafından yeniden açılan worker aynı dinamik planla insan müdahalesi olmadan sürer.
 
 `LegendBots Autonomous Supervisor` adlı kullanıcı kapsamlı Windows görevi manager'ı
-ayrı bir süreçten gözetler. Dört terminal birlikte kapanırsa supervisor manager
-hostunu, manager da yalnız çalışması istenen worker hostlarını geri getirir.
+ayrı bir süreçten gözetler. Manager ekranı kapanırsa supervisor manager hostunu,
+manager da yalnız çalışması istenen gizli worker hostlarını geri getirir.
 
-Süreler gerekirse yalnızca ilgili PowerShell oturumunda değiştirilebilir:
+Süreler sistem çalışırken doğrudan Manager PowerShell ekranından değiştirilebilir:
+
+```text
+wait network 25
+wait group 30
+wait sign auto
+wait auto
+```
+
+`auto on/off` otomatik dengeyi, `focus sign` ve `focus off` süreli bot odağını
+yönetir. Güvenli 15 saniyelik ağ/hesap geçiş tabanı ve ilk 120 saniyelik 403
+geri çekilme tabanı düşürülemez. Eski oturum-bazlı ortam değişkenleri de hâlâ
+desteklenir:
 
 ```powershell
 $env:LEGEND_NAVIGATION_INTERVAL_MS = '15000'

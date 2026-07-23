@@ -15,6 +15,7 @@ const {
     logLeaderInviteLink,
     loadConfirmedGroupState,
     loadVerifiedGroups,
+    missingAccountRoleError,
     normalizedRoleName,
     persistConfirmedGroupState,
     selectMemberRegistrationRole,
@@ -57,6 +58,16 @@ test('CloudFront 403 sayfasını durum kodu veya gövde imzasından tanır', () 
         true,
     );
     assert.equal(isCloudFrontSignature(200, 'Legend Online', 'Kabul Et'), false);
+});
+
+test('tamamı boş OAS rol listesi Bot 1 yeniden doğrulama sinyali üretir', () => {
+    const error = missingAccountRoleError('NICK41', [
+        { sid: '1411', roleId: '', roleName: 'Boş' },
+        { sid: '1412', roleId: '', roleName: 'Boş' },
+    ]);
+    assert.equal(error.code, 'ACCOUNT_ROLE_MISSING');
+    assert.equal(error.preventRelogin, true);
+    assert.equal(error.accountNeedsReverification, true);
 });
 
 test('liderin tam davet linkini JSON satırı olarak günlüğe yazar', () => {

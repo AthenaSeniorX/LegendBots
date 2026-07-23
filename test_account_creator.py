@@ -66,6 +66,23 @@ class AccountCreatorVisualEvidenceTests(unittest.TestCase):
             self.assertTrue(verification["game_ready_screen"])
             self.assertFalse(verification["two_blue_loading_bars"])
 
+    def test_completed_account_can_be_reverified_without_losing_nickname(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="legendbots-reverify-") as temporary:
+            path = Path(temporary) / "completed_accounts.json"
+            store = bot.ProgressStore(path, {})
+            store.mark_completed("test41@example.com", "NICK41", "two_blue_loading_bars")
+
+            self.assertTrue(store.mark_for_reverification("test41@example.com", "role missing"))
+
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            self.assertNotIn("test41@example.com", payload["completed_accounts"])
+            pending = payload["pending_verification"]["test41@example.com"]
+            self.assertEqual(pending["nickname"], "NICK41")
+            self.assertEqual(pending["reverification_reason"], "role missing")
+
+    def test_client_keeps_verified_session_open_for_server_role_persistence(self) -> None:
+        self.assertGreaterEqual(bot.ClientConfig().post_verification_wait, 10.0)
+
     def test_blue_bars_win_when_both_success_screens_are_visible(self) -> None:
         blue = bot.GameEntryEvidence("two_blue_loading_bars", 101, ((1, 2, 3, 4), (1, 8, 3, 4)))
         game_ready = bot.GameEntryEvidence("game_ready_screen", 102, (10, 20, 30, 40, 0.99))

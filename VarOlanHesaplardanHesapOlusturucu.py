@@ -9,7 +9,7 @@ import string
 ## Legend Online Helper için özel olarak geliştirilmiştir Bot 1
 ## Otomatik hesap(lar) kurmak için yapılmıştır.
 def generateNickname():
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=7))
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=7))
 
 legendOnlineFlag = False
 print("\n")

@@ -1,5 +1,6 @@
 ﻿param(
     [switch]$Install,
+    [switch]$Uninstall,
     [switch]$CheckOnly
 )
 
@@ -19,6 +20,12 @@ $utf8NoBom = New-Object Text.UTF8Encoding($false)
 
 if (-not (Test-Path -LiteralPath $workerHost -PathType Leaf)) {
     throw "Worker host bulunamadı: $workerHost"
+}
+
+if ($Uninstall) {
+    Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+    Write-Output "Supervisor görevi kaldırıldı: $taskName"
+    exit 0
 }
 
 if ($CheckOnly) {
@@ -49,7 +56,6 @@ if ($Install) {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
     $arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$PSCommandPath`""
     $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $arguments -WorkingDirectory $PSScriptRoot
-    $trigger = New-ScheduledTaskTrigger -AtLogOn -User $identity
     $principal = New-ScheduledTaskPrincipal -UserId $identity -LogonType Interactive -RunLevel Limited
     $settings = New-ScheduledTaskSettingsSet `
         -AllowStartIfOnBatteries `
@@ -61,7 +67,6 @@ if ($Install) {
     Register-ScheduledTask `
         -TaskName $taskName `
         -Action $action `
-        -Trigger $trigger `
         -Principal $principal `
         -Settings $settings `
         -Force | Out-Null
@@ -70,23 +75,34 @@ if ($Install) {
     exit 0
 }
 
-function Test-ProcessAlive {
-    param([int]$ProcessId)
+function Test-ManagedWorkerProcess {
+    param(
+        [int]$ProcessId,
+        [Parameter(Mandatory = $true)][string]$Worker
+    )
     if ($ProcessId -le 0) {
         return $false
     }
-    return $null -ne (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)
+    $process = Get-CimInstance Win32_Process -Filter "ProcessId = $ProcessId" -ErrorAction SilentlyContinue
+    if ($null -eq $process -or [string]::IsNullOrWhiteSpace([string]$process.CommandLine)) {
+        return $false
+    }
+    $expectedScript = if ($Worker -eq 'manager') { 'pipeline\manager.js' } else { "pipeline\$Worker-worker.js" }
+    $normalizedCommand = ([string]$process.CommandLine).Replace('/', '\')
+    return $normalizedCommand.IndexOf($expectedScript, [StringComparison]::OrdinalIgnoreCase) -ge 0 -and
+        $normalizedCommand.IndexOf($PSScriptRoot, [StringComparison]::OrdinalIgnoreCase) -ge 0
 }
 
 function Test-WorkerHostAlive {
     param([Parameter(Mandatory = $true)][string]$Worker)
     $escapedPath = [Regex]::Escape($workerHost)
-    $workerPattern = '(?i)-Worker\s+' + [Regex]::Escape($Worker) + '(?:\s|$)'
+    $hostPattern = '(?i)-(?:File|F)\s+["'']?' + $escapedPath + '["'']?(?:\s|$)'
+    $workerPattern = '(?i)-Worker\s+["'']?' + [Regex]::Escape($Worker) + '["'']?(?:\s|$)'
     return $null -ne (
         Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" -ErrorAction SilentlyContinue |
             Where-Object {
                 $_.ProcessId -ne $PID -and
-                $_.CommandLine -match $escapedPath -and
+                $_.CommandLine -match $hostPattern -and
                 $_.CommandLine -match $workerPattern
             } |
             Select-Object -First 1
@@ -101,18 +117,18 @@ $hungSeconds = 300
 
 while ($true) {
     try {
-        $desired = @{ account = $true; group = $true; sign = $true; manager = $true }
+        # Supervisor yalnız Bot 0'ı ayakta tutar. Dört çalışma botunun tek sahibi
+        # manager'dır; iki ayrı gözetmenin aynı anda host açması engellenir.
+        $desired = @{ manager = $true }
         if (Test-Path -LiteralPath $workerControlPath -PathType Leaf) {
             $control = Get-Content -Raw -Encoding UTF8 -LiteralPath $workerControlPath | ConvertFrom-Json
-            foreach ($worker in @('account', 'group', 'sign')) {
-                $entry = $control.workers.$worker
-                if ($null -ne $entry) {
-                    $desired[$worker] = [bool]$entry.enabled
-                }
+            $entry = $control.workers.manager
+            if ($null -ne $entry) {
+                $desired['manager'] = [bool]$entry.enabled
             }
         }
 
-        foreach ($worker in @('manager', 'account', 'group', 'sign')) {
+        foreach ($worker in @('manager')) {
             if (-not $desired[$worker]) {
                 $unhealthySince.Remove($worker)
                 continue
@@ -125,7 +141,7 @@ while ($true) {
             }
 
             $workerPid = if ($heartbeat) { [int]$heartbeat.pid } else { 0 }
-            $alive = Test-ProcessAlive $workerPid
+            $alive = Test-ManagedWorkerProcess $workerPid $worker
             $lastSeen = if ($heartbeat) {
                 [DateTimeOffset]::Parse([string]$heartbeat.last_seen_at)
             }

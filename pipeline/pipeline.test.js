@@ -7,6 +7,7 @@ const path = require('node:path');
 const test = require('node:test');
 const {
     PipelineStore,
+    acquireFileLock,
     atomicWriteJson,
     computeRateLimitBackoffMs,
     loadConfig,
@@ -15,8 +16,10 @@ const {
     releaseNetworkPenalty,
     reserveNetworkSlot,
 } = require('./core');
+const { executeOperatorCommand, renderDashboardUI } = require('./manager');
 const { configureEnvironment: configureGroupEnvironment } = require('./group-worker');
 const { configureEnvironment: configureSignEnvironment } = require('./sign-worker');
+const { workerLockOwnerMatches } = require('./worker-common');
 
 test('workerlar miras kalan agresif hiz ayarlarini guvenli alt sinira yukseltir', () => {
     const names = [
@@ -279,6 +282,37 @@ test('Windows geçici EPERM kilidinde atomik JSON yazımı yeniden denenir', () 
     }
 });
 
+test('singleton kilidindeki yeniden kullanılmış PID süreç kimliğiyle güvenle ayırt edilir', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'legendbots-stale-singleton-'));
+    const runtimeDir = path.join(root, 'pipeline-runtime');
+    const lockPath = path.join(runtimeDir, 'worker-locks', 'reward.lock');
+    fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+    const staleLock = {
+        token: 'stale-token',
+        pid: process.pid,
+        created_at: new Date(Date.now() - 60_000).toISOString(),
+        created_at_ms: Date.now() - 60_000,
+    };
+    fs.writeFileSync(lockPath, JSON.stringify(staleLock), 'utf8');
+    try {
+        if (process.platform === 'win32') {
+            assert.equal(
+                workerLockOwnerMatches('reward', runtimeDir, process.pid, staleLock),
+                false,
+            );
+        }
+        const release = await acquireFileLock(lockPath, {
+            timeoutMs: 2000,
+            staleMs: 30_000,
+            ownerProcessMatches: () => false,
+        });
+        release();
+        assert.equal(fs.existsSync(lockPath), false);
+    } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+    }
+});
+
 test('normal istekler ortak sırayı, 403 ise yalnız hatayı alan botun soğumasını kullanır', async () => {
     const sharedRuntimeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'legendbots-network-shared-'));
     const penaltyRuntimeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'legendbots-network-penalty-'));
@@ -399,6 +433,44 @@ test('dört en eski hesabı atomik claim eder ve ilk havuzdan düşürür', asyn
         const state = await fixture.store.snapshot();
         assert.equal(Object.values(state.accounts).filter((item) => item.stage === 'created').length, 1);
         assert.equal(state.groups[group.id].status, 'grouping');
+    } finally {
+        fs.rmSync(fixture.root, { recursive: true, force: true });
+    }
+});
+
+test('OAS rolü eksik hesap Bot 1 recovery kuyruğuna alınır ve aynı grubu uyandırır', async () => {
+    const fixture = createFixture();
+    try {
+        for (let index = 1; index <= 4; index += 1) {
+            await fixture.store.registerCreatedAccount(account(index));
+        }
+        const group = await fixture.store.claimGroupingPackage('group-worker');
+        await fixture.store.requestAccountReverification(
+            group.id,
+            group.claimToken,
+            group.accounts[0].email,
+            'OAS role missing',
+        );
+        await fixture.store.failGrouping(
+            group.id,
+            group.claimToken,
+            'OAS role missing',
+            new Date(Date.now() + 60_000).toISOString(),
+        );
+
+        let state = await fixture.store.snapshot();
+        assert.equal(state.accounts[group.accounts[0].email].reverification.status, 'requested');
+        assert.equal((await fixture.store.dashboardOverview()).pools.account_reverification_requested, 1);
+
+        await fixture.store.completeAccountReverification({
+            ...account(1),
+            nickname: 'NICK1-VERIFIED',
+        });
+        state = await fixture.store.snapshot();
+        assert.equal(state.accounts[group.accounts[0].email].nickname, 'NICK1-VERIFIED');
+        assert.equal(state.accounts[group.accounts[0].email].reverification.status, 'completed');
+        assert.equal(state.groups[group.id].retry_not_before, null);
+        assert.equal(state.groups[group.id].status, 'retry_grouping');
     } finally {
         fs.rmSync(fixture.root, { recursive: true, force: true });
     }
@@ -657,6 +729,363 @@ test('seed ile signed işaretlenen otomatik grubu çoğaltmaz veya geriye düş�
         assert.equal(Object.keys(state.groups).length, 1);
         assert.equal(state.groups['manual-signed-existing'].status, 'signed');
         assert.equal(grouped.every((item) => state.accounts[item.email].stage === 'signed'), true);
+    } finally {
+        fs.rmSync(fixture.root, { recursive: true, force: true });
+    }
+});
+
+test('dashboardOverview ve executeOperatorCommand manager arayüz işlevlerini doğrular', async () => {
+    const fixture = createFixture({
+        version: 1,
+        created_accounts: [],
+        grouped_packages: [],
+        signed_packages: [],
+    });
+    try {
+        const overview = await fixture.store.dashboardOverview();
+        assert.ok(overview.pools);
+        assert.ok(overview.workers.account);
+        assert.ok(overview.workers.reward);
+        assert.ok(overview.workers.manager);
+
+        const noticeAccountToggle = await executeOperatorCommand(fixture.store, '1');
+        assert.match(noticeAccountToggle, /BOT 1/);
+
+        const noticeAllOff = await executeOperatorCommand(fixture.store, 'S');
+        assert.equal(noticeAllOff, 'Tüm botlar DURDURULDU.');
+        assert.equal(fixture.store.isWorkerEnabled('account'), false);
+        assert.equal(fixture.store.isWorkerEnabled('group'), false);
+        assert.equal(fixture.store.isWorkerEnabled('sign'), false);
+        assert.equal(fixture.store.isWorkerEnabled('reward'), false);
+
+        const noticeAllOn = await executeOperatorCommand(fixture.store, 'A');
+        assert.equal(noticeAllOn, 'Tüm botlar BAŞLATILDI.');
+        assert.equal(fixture.store.isWorkerEnabled('account'), true);
+        assert.equal(fixture.store.isWorkerEnabled('group'), true);
+        assert.equal(fixture.store.isWorkerEnabled('sign'), true);
+        assert.equal(fixture.store.isWorkerEnabled('reward'), true);
+
+        let quitRequested = false;
+        const quitNotice = await executeOperatorCommand(fixture.store, 'Q', {
+            onQuit: () => { quitRequested = true; },
+        });
+        assert.equal(quitRequested, true);
+        assert.equal(fixture.store.isWorkerEnabled('manager'), false);
+        assert.match(quitNotice, /güvenli kapanış/);
+    } finally {
+        fs.rmSync(fixture.root, { recursive: true, force: true });
+    }
+});
+
+test('Bot 0 odak beklemesinden çıkan workerı kısa başlangıç geçişinde SORUN göstermez', async () => {
+    const fixture = createFixture();
+    try {
+        await fixture.store.setManagerPaused('reward', true, 'test_focus');
+        await fixture.store.setManagerPaused('reward', false, 'test_focus_release');
+        fs.mkdirSync(fixture.store.heartbeatDir, { recursive: true });
+        atomicWriteJson(path.join(fixture.store.heartbeatDir, 'reward.json'), {
+            worker: 'reward',
+            pid: 2147483647,
+            status: 'stopped',
+            action: 'stopped',
+            last_seen_at: new Date().toISOString(),
+        });
+
+        let overview = await fixture.store.dashboardOverview();
+        assert.equal(overview.workers.reward.statusLabel, 'BAŞLATILIYOR');
+        let output = renderDashboardUI(overview);
+        assert.match(output, /BAŞLIYOR/);
+        assert.doesNotMatch(output, /BOT 4 \/ REWARD[^\n]*SORUN/);
+
+        const control = fixture.store.workerControl();
+        control.workers.reward.manager_pause_updated_at = new Date(Date.now() - 60000).toISOString();
+        control.workers.reward.updated_at = null;
+        atomicWriteJson(fixture.store.controlPath, control);
+
+        overview = await fixture.store.dashboardOverview();
+        assert.equal(overview.workers.reward.statusLabel, 'ÖLÜ (YOK)');
+        output = renderDashboardUI(overview);
+        assert.match(output, /BOT 4 \/ REWARD[^\n]*SORUN/);
+    } finally {
+        fs.rmSync(fixture.root, { recursive: true, force: true });
+    }
+});
+
+test('renderDashboardUI çıktı biçimini doğrular', async () => {
+    const fixture = createFixture({
+        version: 1,
+        created_accounts: [],
+        grouped_packages: [],
+        signed_packages: [],
+    });
+    try {
+        const overview = await fixture.store.dashboardOverview();
+        const output = renderDashboardUI(overview, 'Test Bildirimi');
+        assert.match(output, /BOT 0 MANAGER CANLI KONTROL MERKEZİ/);
+        assert.match(output, /BOTLAR ARASI İLİŞKİ VE HAVUZ AKIŞI/);
+        assert.match(output, /HAVUZ İSTATİSTİKLERİ VE HEDEF İLERLEMESİ/);
+        assert.match(output, /Test Bildirimi/);
+        assert.doesNotMatch(output, /operatör sabitlemesi/);
+
+        overview.manager.settings.manual_timing = { networkIntervalMs: 25000 };
+        overview.manager.effective_timing.networkIntervalMs = 25000;
+        const manualOutput = renderDashboardUI(overview);
+        assert.match(manualOutput, /Ağ 25sn\*/);
+        assert.match(manualOutput, /operatör sabitlemesi/);
+    } finally {
+        fs.rmSync(fixture.root, { recursive: true, force: true });
+    }
+});
+
+test('Bot 4 ödül toplama ve 24h imza yenileme akışını doğrular', async () => {
+    const fixture = createFixture({
+        version: 1,
+        created_accounts: [],
+        grouped_packages: [],
+        signed_packages: [
+            {
+                id: 'GRP-REWARD-001',
+                sequence: 1,
+                signed_at: new Date(Date.now() - 25 * 3600 * 1000).toISOString(),
+                accounts: [
+                    { email: 'rw1@test.com', index: 1, nickname: 'rw1' },
+                    { email: 'rw2@test.com', index: 2, nickname: 'rw2' },
+                    { email: 'rw3@test.com', index: 3, nickname: 'rw3' },
+                    { email: 'rw4@test.com', index: 4, nickname: 'rw4' },
+                ],
+            },
+        ],
+    });
+    try {
+        const claimed = await fixture.store.claimRewardPackage('reward-worker-1');
+        assert.ok(claimed);
+        assert.equal(claimed.id, 'GRP-REWARD-001');
+        assert.equal(claimed.needsResign, true);
+        assert.deepEqual(claimed.claimableLevels, []);
+
+        for (const rewardAccount of claimed.accounts) {
+            await fixture.store.markRewardAccountSigned(
+                claimed.id,
+                claimed.claimToken,
+                rewardAccount.email,
+                { first: 'signed', verified_at: new Date().toISOString() },
+            );
+        }
+        // Aynı callback ikinci kez gelse sayaç artmamalı.
+        await fixture.store.markRewardAccountSigned(
+            claimed.id,
+            claimed.claimToken,
+            claimed.accounts[0].email,
+            { first: 'already_signed', verified_at: new Date().toISOString() },
+        );
+        for (const [index, rewardAccount] of claimed.accounts.entries()) {
+            await fixture.store.recordRewardClaim(
+                claimed.id,
+                claimed.claimToken,
+                rewardAccount.email,
+                5,
+                `TESTCODE5-${index + 1}`,
+            );
+        }
+        const updatedGroup = await fixture.store.completeRewardProcessing(claimed.id, claimed.claimToken);
+
+        assert.equal(updatedGroup.status, 'signed');
+        const snapshot = await fixture.store.snapshot();
+        const storedGroup = snapshot.groups['GRP-REWARD-001'];
+        assert.equal(storedGroup.sign_count, 8);
+        assert.deepEqual(storedGroup.claimed_rewards, [5]);
+        assert.deepEqual(storedGroup.reward_codes['5'], {
+            'rw1@test.com': 'TESTCODE5-1',
+            'rw2@test.com': 'TESTCODE5-2',
+            'rw3@test.com': 'TESTCODE5-3',
+            'rw4@test.com': 'TESTCODE5-4',
+        });
+        assert.equal(storedGroup.reward_cycle, null);
+        assert.equal(storedGroup.last_reward_cycle.signed_accounts.length, 4);
+    } finally {
+        fs.rmSync(fixture.root, { recursive: true, force: true });
+    }
+});
+
+test('Bot 4 sunucuda önceden oluşmuş dört ayrı üye kodunu state ile uzlaştırır', async () => {
+    const fixture = createFixture({
+        version: 1,
+        created_accounts: [],
+        grouped_packages: [],
+        signed_packages: [{
+            id: 'REWARD-REMOTE-RECONCILE',
+            sequence: 1,
+            signed_at: new Date().toISOString(),
+            accounts: [1, 2, 3, 4].map((index) => account(index)),
+        }],
+    });
+    try {
+        const first = await fixture.store.reconcileObservedRewardCodes(
+            'REWARD-REMOTE-RECONCILE',
+            'test1@example.com',
+            [{ threshold: 5, code: 'REMOTE-CODE-5-1' }],
+            { pass: 1 },
+        );
+        assert.deepEqual(first.added, [5]);
+        assert.equal(first.observed, 1);
+
+        const state = await fixture.store.snapshot();
+        const group = state.groups['REWARD-REMOTE-RECONCILE'];
+        assert.deepEqual(group.reward_codes['5'], {
+            'test1@example.com': 'REMOTE-CODE-5-1',
+        });
+        assert.deepEqual(group.claimed_rewards, []);
+        assert.equal(group.sign_count, 5);
+        assert.equal(group.reward_code_checks['test1@example.com'].status, 'success');
+        assert.deepEqual(group.reward_code_checks['test1@example.com'].attempted_claims, []);
+        assert.deepEqual(group.reward_code_checks['test1@example.com'].unavailable_claims, []);
+        assert.ok(state.history.some((entry) =>
+            entry.type === 'reward_code_reconciled_from_server' && entry.group_id === group.id,
+        ));
+
+        const second = await fixture.store.reconcileObservedRewardCodes(
+            group.id,
+            'test1@example.com',
+            [{ threshold: 5, code: 'REMOTE-CODE-5-1' }],
+            { pass: 2 },
+        );
+        assert.deepEqual(second.added, []);
+        for (let index = 2; index <= 4; index += 1) {
+            const memberResult = await fixture.store.reconcileObservedRewardCodes(
+                group.id,
+                `test${index}@example.com`,
+                [{ threshold: 5, code: `REMOTE-CODE-5-${index}` }],
+            );
+            assert.deepEqual(memberResult.added, [5]);
+        }
+        const completed = await fixture.store.snapshot();
+        assert.deepEqual(
+            completed.groups[group.id].claimed_rewards,
+            [5],
+        );
+        assert.equal(
+            new Set(Object.values(completed.groups[group.id].reward_codes['5'])).size,
+            4,
+        );
+        const overview = await fixture.store.dashboardOverview();
+        assert.equal(overview.pools.total_reward_codes, 4);
+        assert.equal(overview.pools.total_claimed_chests, 1);
+        await assert.rejects(
+            fixture.store.reconcileObservedRewardCodes(
+                group.id,
+                'test1@example.com',
+                [{ threshold: 5, code: 'FARKLI-CODE-5-1' }],
+            ),
+            /state ve sunucu kodları farklı/,
+        );
+        await assert.rejects(
+            fixture.store.reconcileObservedRewardCodes(
+                group.id,
+                'outsider@example.com',
+                [{ threshold: 5, code: 'OUTSIDER-CODE-5' }],
+            ),
+            /grubuna ait değildir/,
+        );
+    } finally {
+        fs.rmSync(fixture.root, { recursive: true, force: true });
+    }
+});
+
+test('Bot 4 24 saat dolmadan yeni paketi sign kuyruğuna almaz', async () => {
+    const fixture = createFixture({
+        version: 1,
+        created_accounts: [],
+        grouped_packages: [],
+        signed_packages: [{
+            id: 'REWARD-NOT-DUE',
+            signed_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+            accounts: [1, 2, 3, 4].map((index) => account(index)),
+        }],
+    });
+    try {
+        assert.equal(await fixture.store.claimRewardPackage('reward-worker'), null);
+        const state = await fixture.store.snapshot();
+        assert.equal(state.groups['REWARD-NOT-DUE'].status, 'signed');
+    } finally {
+        fs.rmSync(fixture.root, { recursive: true, force: true });
+    }
+});
+
+test('eski Bot 4 premature retry kaydını açılışta otomatik onarır', async () => {
+    const fixture = createFixture({
+        version: 1,
+        created_accounts: [],
+        grouped_packages: [],
+        signed_packages: [{
+            id: 'REWARD-PREMATURE-RETRY',
+            signed_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+            accounts: [1, 2, 3, 4].map((index) => account(index)),
+        }],
+    });
+    try {
+        await fixture.store.snapshot();
+        const legacyState = JSON.parse(fs.readFileSync(fixture.store.statePath, 'utf8'));
+        const legacyGroup = legacyState.groups['REWARD-PREMATURE-RETRY'];
+        legacyGroup.status = 'retry_rewarding';
+        legacyGroup.claim = null;
+        legacyGroup.retry_not_before = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+        legacyGroup.last_error = { at: new Date().toISOString(), message: '24 saat dolmadı' };
+        legacyGroup.reward_operation = { started_at: new Date().toISOString() };
+        fs.writeFileSync(
+            fixture.store.statePath,
+            `${JSON.stringify(legacyState, null, 2)}\n`,
+            'utf8',
+        );
+
+        const repairedState = await fixture.store.snapshot();
+        const repairedGroup = repairedState.groups['REWARD-PREMATURE-RETRY'];
+        assert.equal(repairedGroup.status, 'signed');
+        assert.equal(repairedGroup.retry_not_before, null);
+        assert.equal(repairedGroup.last_error, null);
+        assert.equal(repairedGroup.reward_operation, null);
+        assert.ok(repairedState.history.some(
+            (entry) => entry.type === 'premature_reward_retry_cleared'
+                && entry.group_id === 'REWARD-PREMATURE-RETRY',
+        ));
+    } finally {
+        fs.rmSync(fixture.root, { recursive: true, force: true });
+    }
+});
+
+test('Bot 4 son ödül tamamlandıktan sonra gereksiz günlük sign döngüsünü durdurur', async () => {
+    const fixture = createFixture({
+        version: 1,
+        created_accounts: [],
+        grouped_packages: [],
+        signed_packages: [{
+            id: 'REWARD-ALL-COMPLETE',
+            signed_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+            accounts: [1, 2, 3, 4].map((index) => account(index)),
+        }],
+    });
+    try {
+        await fixture.store.snapshot();
+        const completedState = JSON.parse(fs.readFileSync(fixture.store.statePath, 'utf8'));
+        const completedGroup = completedState.groups['REWARD-ALL-COMPLETE'];
+        completedGroup.sign_count = 100;
+        completedGroup.claimed_rewards = [5, 10, 15, 20, 30, 40, 60, 80, 100];
+        completedGroup.reward_codes = Object.fromEntries(
+            completedGroup.claimed_rewards.map((threshold) => [
+                threshold,
+                Object.fromEntries(completedGroup.account_emails.map(
+                    (email, index) => [email, `CODE-${threshold}-${index + 1}`],
+                )),
+            ]),
+        );
+        fs.writeFileSync(
+            fixture.store.statePath,
+            `${JSON.stringify(completedState, null, 2)}\n`,
+            'utf8',
+        );
+
+        assert.equal(await fixture.store.claimRewardPackage('reward-worker'), null);
+        const overview = await fixture.store.dashboardOverview();
+        assert.equal(overview.pools.reward_ready, 0);
     } finally {
         fs.rmSync(fixture.root, { recursive: true, force: true });
     }

@@ -9,6 +9,9 @@ const {
 } = require('./worker-common');
 
 function configureEnvironment(context) {
+    const timing = typeof context.store.effectiveTiming === 'function'
+        ? context.store.effectiveTiming()
+        : context.store.config.timing;
     process.env.LEGEND_HEADLESS = context.store.config.backgroundWorkersHeadless
         ? 'true'
         : 'false';
@@ -18,27 +21,27 @@ function configureEnvironment(context) {
     };
     enforceMinimum(
         'LEGEND_NAVIGATION_INTERVAL_MS',
-        context.store.config.timing.networkIntervalMs,
+        timing.networkIntervalMs,
     );
     enforceMinimum(
         'LEGEND_ACCOUNT_COOLDOWN_MS',
-        context.store.config.timing.groupAccountCooldownSeconds * 1000,
+        timing.groupAccountCooldownSeconds * 1000,
     );
     enforceMinimum(
         'LEGEND_GROUP_COOLDOWN_MS',
-        context.store.config.timing.groupPackageCooldownSeconds * 1000,
+        timing.groupPackageCooldownSeconds * 1000,
     );
     enforceMinimum(
         'LEGEND_CLOUDFRONT_BACKOFF_MS',
-        context.store.config.timing.cloudFrontBackoffBaseSeconds * 1000,
+        timing.cloudFrontBackoffBaseSeconds * 1000,
     );
     enforceMinimum(
         'LEGEND_CLOUDFRONT_BACKOFF_MAX_MS',
-        context.store.config.timing.cloudFrontBackoffMaxSeconds * 1000,
+        timing.cloudFrontBackoffMaxSeconds * 1000,
     );
     enforceMinimum(
         'LEGEND_CLOUDFRONT_MAX_ATTEMPTS',
-        context.store.config.timing.cloudFrontMaxAttempts,
+        timing.cloudFrontMaxAttempts,
     );
 }
 
@@ -49,8 +52,13 @@ function isConfirmedGroup(group) {
     if (!fs.existsSync(target)) {
         return false;
     }
+    // Bozuk JSON'u "henüz onaylanmamış" saymak aynı dört hesabı uzak sistemde
+    // yeniden gruplamaya kalkar. Parse/şema hatası fail-closed davranmalıdır.
     const state = JSON.parse(fs.readFileSync(target, 'utf8'));
-    const record = state.groups && state.groups[String(group.sequence)];
+    if (!state || state.version !== 1 || !state.groups || typeof state.groups !== 'object') {
+        throw new Error('onaylanmis_gruplar.json biçimi geçersiz; gruplama güvenlik için durdu.');
+    }
+    const record = state.groups[String(group.sequence)];
     if (!record || record.status !== 'confirmed' || !Array.isArray(record.accounts)) {
         return false;
     }
@@ -75,7 +83,10 @@ async function main() {
         return;
     }
     configureEnvironment(context);
-    const { runGroupingBatch } = require('../grupla');
+    const { applyRuntimeTiming, runGroupingBatch } = require('../grupla');
+    const refreshTiming = () => applyRuntimeTiming(context.store.effectiveTiming());
+    refreshTiming();
+    context.addHeartbeatHook(refreshTiming);
     context.start();
     console.log('[BOT 2] Dörtlü gruplama worker başladı (arka plan Chrome).');
 
@@ -111,24 +122,51 @@ async function main() {
                 }
                 await context.store.completeGrouping(group.id, group.claimToken);
                 console.log(`[BOT 2] ${group.id} kesin onaylandı ve sign havuzuna taşındı.`);
+                const packageCooldown = context.store.effectiveTiming().groupPackageCooldownSeconds;
                 context.heartbeat({
                     status: 'waiting',
                     action: 'group_cooldown',
                     current_group: null,
                     current_accounts: [],
                     last_success_at: new Date().toISOString(),
+                    wait_seconds: packageCooldown,
+                    wait_until: new Date(Date.now() + packageCooldown * 1000).toISOString(),
                 });
                 await idleUntilStopped(
                     context,
-                    context.store.config.timing.groupPackageCooldownSeconds,
+                    packageCooldown,
                 );
             } catch (error) {
-                let delay = context.store.config.timing.retryBaseSeconds;
+                const timing = context.store.effectiveTiming();
+                let delay = timing.retryBaseSeconds;
                 if (group && group.claimToken) {
                     const attempt = Number(group.attemptCount || 1);
-                    delay = computeBackoffSeconds(attempt, context.store.config);
+                    delay = computeBackoffSeconds(attempt, { ...context.store.config, timing });
                     if (Number.isFinite(error.retryAfterSeconds)) {
                         delay = Math.max(delay, Math.ceil(error.retryAfterSeconds));
+                    }
+                    if (error.accountNeedsReverification && error.accountEmail) {
+                        try {
+                            await context.store.requestAccountReverification(
+                                group.id,
+                                group.claimToken,
+                                error.accountEmail,
+                                error.message,
+                            );
+                            // Bot 1 tamamladığında grup retry zamanını atomik olarak
+                            // erkene çeker. O zamana kadar hızlı uzak tekrar yapma.
+                            delay = Math.max(delay, timing.retryBaseSeconds);
+                            console.warn(
+                                `[BOT 2] ${error.accountEmail} OAS rolü eksik; ` +
+                                'Bot 1 kalıcı yeniden doğrulama kuyruğuna alındı.',
+                            );
+                        } catch (reverificationError) {
+                            writeWorkerError(context.store, 'group', reverificationError, {
+                                group_id: group.id,
+                                account_email: error.accountEmail,
+                                recovery: 'account_reverification_request',
+                            });
+                        }
                     }
                     try {
                         await context.store.failGrouping(group.id, group.claimToken, error.message, futureIso(delay));
@@ -144,6 +182,7 @@ async function main() {
                     current_group: group && group.id,
                     last_error: error.message,
                     retry_seconds: delay,
+                    wait_until: new Date(Date.now() + delay * 1000).toISOString(),
                 });
                 await idleUntilStopped(context, delay);
             }

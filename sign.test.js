@@ -6,6 +6,7 @@ const {
     LOGIN_URL,
     classifySignText,
     isCloudFrontSignature,
+    isRecoverableBrowserSessionError,
     validatePackage,
 } = require('./sign');
 
@@ -30,6 +31,14 @@ test('CloudFront imzalarını 403 kodu veya gövdesinden algılar', () => {
     assert.equal(isCloudFrontSignature(403, ''), true);
     assert.equal(isCloudFrontSignature(200, 'The request could not be satisfied'), true);
     assert.equal(isCloudFrontSignature(200, 'sign başarılı'), false);
+});
+
+test('Puppeteer detached frame hatasını temiz oturumla yenilenebilir sayar', () => {
+    assert.equal(
+        isRecoverableBrowserSessionError(new Error("Attempted to use detached Frame 'ABC'.")),
+        true,
+    );
+    assert.equal(isRecoverableBrowserSessionError(new Error('credential reddedildi')), false);
 });
 
 test('sign paketi tam dört benzersiz hesap gerektirir', () => {

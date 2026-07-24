@@ -1,12 +1,17 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import config
-from bot_engine import LegendBotEngine, find_window_by_keyword
+from bot_engine import (
+    BackgroundInputError,
+    CoordinateError,
+    LegendBotEngine,
+    inspect_target,
+)
 
 class BotGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Legend Online - Arka Plan Chat Reklam Botu v3.0")
+        self.root.title("Legend Chat Reklam Botu - HWND v4.0")
         self.root.geometry("680x820")
         self.root.minsize(640, 780)
         self.root.configure(bg="#1e1e2e")
@@ -19,6 +24,7 @@ class BotGUI:
         )
 
         self._build_ui()
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def _build_ui(self):
         style = ttk.Style()
@@ -44,7 +50,7 @@ class BotGUI:
 
         subtitle_label = tk.Label(
             header_frame, 
-            text="Kesintisiz Arka Plan Modu (RDP Kapalıyken %100 Çalışır)", 
+            text="HWND arka plan modu • Fiziksel fare ve pencere odağı gerekmez",
             font=("Segoe UI", 9), 
             bg="#313244", 
             fg="#bac2de"
@@ -99,12 +105,12 @@ class BotGUI:
         self.btn_find_window.grid(row=0, column=2, padx=5, pady=2)
 
         # Koordinatlar
-        ttk.Label(target_frame, text="Chat Tıklama X:").grid(row=1, column=0, sticky="w", pady=2)
+        ttk.Label(target_frame, text="Chat Client X:").grid(row=1, column=0, sticky="w", pady=2)
         self.entry_click_x = ttk.Entry(target_frame, width=12)
         self.entry_click_x.insert(0, str(config.DEFAULT_CLICK_X))
         self.entry_click_x.grid(row=1, column=1, padx=5, pady=2, sticky="w")
 
-        ttk.Label(target_frame, text="Chat Tıklama Y:").grid(row=2, column=0, sticky="w", pady=2)
+        ttk.Label(target_frame, text="Chat Client Y:").grid(row=2, column=0, sticky="w", pady=2)
         self.entry_click_y = ttk.Entry(target_frame, width=12)
         self.entry_click_y.insert(0, str(config.DEFAULT_CLICK_Y))
         self.entry_click_y.grid(row=2, column=1, padx=5, pady=2, sticky="w")
@@ -119,7 +125,7 @@ class BotGUI:
 
         rb_pm = tk.Radiobutton(
             mode_radio_frame,
-            text="Arka Plan (PostMessage — RDP Kapalıyken %100 Çalışır)",
+            text="Arka Plan (HWND SendMessage — önerilen)",
             variable=self.mode_var,
             value="postmessage",
             bg="#1e1e2e",
@@ -133,7 +139,7 @@ class BotGUI:
 
         rb_si = tk.Radiobutton(
             mode_radio_frame,
-            text="Ön Plan (SendInput — Fiziksel Fare)",
+            text="Ön Plan (SendInput — yalnız yedek mod)",
             variable=self.mode_var,
             value="sendinput",
             bg="#1e1e2e",
@@ -269,20 +275,36 @@ class BotGUI:
             messagebox.showerror("Hata", "Pencere başlığı anahtar kelimesi boş olamaz!")
             return
 
-        result = find_window_by_keyword(keyword)
-        if result:
-            hwnd, title = result
+        try:
+            click_x = int(self.entry_click_x.get().strip())
+            click_y = int(self.entry_click_y.get().strip())
+        except ValueError:
+            messagebox.showerror("Hata", "X ve Y koordinatları geçerli tam sayı olmalıdır!")
+            return
+
+        try:
+            details = inspect_target(keyword, click_x, click_y)
+        except (BackgroundInputError, CoordinateError) as exc:
             self.lbl_window_status.config(
-                text=f"✅ Bulundu: {title[:35]}...",
-                fg="#a6e3a1"
-            )
-            self.log_message(f"[{__import__('time').strftime('%H:%M:%S')}] ✅ Pencere bulundu: '{title}' (HWND: {hwnd})")
-        else:
-            self.lbl_window_status.config(
-                text=f"❌ '{keyword}' bulunamadı",
+                text="❌ Hedef doğrulanamadı",
                 fg="#f38ba8"
             )
-            self.log_message(f"[{__import__('time').strftime('%H:%M:%S')}] ❌ '{keyword}' başlıklı pencere bulunamadı!")
+            self.log_message(
+                f"[{__import__('time').strftime('%H:%M:%S')}] ❌ {exc}"
+            )
+            return
+
+        title = str(details["title"])
+        self.lbl_window_status.config(
+            text=f"✅ Bulundu: {title[:35]}...",
+            fg="#a6e3a1"
+        )
+        self.log_message(
+            f"[{__import__('time').strftime('%H:%M:%S')}] ✅ Oyun bulundu: "
+            f"'{title}' | HWND={details['hwnd']} | PID={details['process_id']} | "
+            f"client={details['client_width']}x{details['client_height']} | "
+            f"input HWND={details['input_hwnd']} ({details['input_class_name'] or 'sınıfsız'})"
+        )
 
     def test_send_once(self):
         msg1 = self.entry_msg1.get().strip()
@@ -331,9 +353,16 @@ class BotGUI:
 
         try:
             inter_delay = float(self.entry_inter_delay.get().strip())
-            self.engine.inter_delay = inter_delay
+            cycle_interval = float(interval)
         except ValueError:
-            pass
+            messagebox.showerror("Hata", "Bekleme süreleri geçerli sayı olmalıdır!")
+            return
+
+        if inter_delay < 0 or cycle_interval < 0:
+            messagebox.showerror("Hata", "Bekleme süreleri negatif olamaz!")
+            return
+
+        self.engine.inter_delay = inter_delay
 
         self.engine.start(
             msg1=msg1,
@@ -352,13 +381,16 @@ class BotGUI:
         self.engine.stop()
 
     def update_status(self, status_text):
-        colors = {
-            "Çalışıyor": "#a6e3a1",
-            "Duraklatıldı": "#fab387",
-            "Durduruldu": "#f38ba8"
-        }
-        fg_color = colors.get(status_text, "#cdd6f4")
-        self.lbl_status.config(text=f"DURUM: {status_text.upper()}", fg=fg_color)
+        def _update():
+            colors = {
+                "Çalışıyor": "#a6e3a1",
+                "Duraklatıldı": "#fab387",
+                "Hedef bekleniyor": "#f9e2af",
+                "Durduruldu": "#f38ba8"
+            }
+            fg_color = colors.get(status_text, "#cdd6f4")
+            self.lbl_status.config(text=f"DURUM: {status_text.upper()}", fg=fg_color)
+        self.root.after(0, _update)
 
     def update_counters(self, messages_sent):
         def _update():
@@ -418,3 +450,17 @@ class BotGUI:
             btn_ok.pack(pady=10)
 
         self.root.after(0, _alert)
+
+    def on_close(self):
+        if self.engine.is_running:
+            should_close = messagebox.askyesno(
+                "Bot Çalışıyor",
+                "Bu pencereyi kapatırsanız reklam botu da durur.\n\n"
+                "Yalnız Uzak Masaüstü bağlantısını kapatacaksanız burada Hayır'a basın; "
+                "sonra RDP uygulamasını X ile kapatın.\n\n"
+                "Botu gerçekten kapatmak istiyor musunuz?"
+            )
+            if not should_close:
+                return
+        self.engine.stop()
+        self.root.destroy()

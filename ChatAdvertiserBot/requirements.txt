@@ -1,1 +1,1 @@
-pywin32>=306
+# Üçüncü taraf Python paketi gerekmez (ctypes ve tkinter standart kütüphanedir).

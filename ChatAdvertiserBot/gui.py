@@ -1,19 +1,21 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+import ctypes
+import ctypes.wintypes
 import config
-from bot_engine import LegendBotEngine
+from bot_engine import LegendBotEngine, find_window_by_keyword, screen_to_client_coords
 
 class BotGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Legend Online - Otomatik Chat & Borazan Botu v1.0")
-        self.root.geometry("640x720")
-        self.root.minsize(600, 680)
+        self.root.title("Legend Online - Arka Plan Chat Reklam Botu v2.0")
+        self.root.geometry("660x780")
+        self.root.minsize(620, 740)
         self.root.configure(bg="#1e1e2e")
 
         self.engine = LegendBotEngine(
             log_callback=self.log_message,
-            alert_callback=self.show_haklarimiz_bitti_alert,
+            alert_callback=self.show_alert,
             status_callback=self.update_status,
             counter_callback=self.update_counters
         )
@@ -34,7 +36,7 @@ class BotGUI:
 
         title_label = tk.Label(
             header_frame, 
-            text="LEGEND ONLINE CHAT BOT", 
+            text="LEGEND ONLINE CHAT BOT v2.0", 
             font=("Segoe UI", 14, "bold"), 
             bg="#313244", 
             fg="#a6e3a1"
@@ -43,7 +45,7 @@ class BotGUI:
 
         subtitle_label = tk.Label(
             header_frame, 
-            text="Otomatik Reklam & 666 Borazan Takip Sistemi", 
+            text="Win32 API Arka Plan Modu — RDP Kapalıyken Bile Çalışır", 
             font=("Segoe UI", 9), 
             bg="#313244", 
             fg="#bac2de"
@@ -53,29 +55,89 @@ class BotGUI:
         main_container = tk.Frame(self.root, bg="#1e1e2e", padx=15, pady=10)
         main_container.pack(fill="both", expand=True)
 
-        # 1. Counter Display Panel (Live Stats)
+        # 1. Counter Display Panel
         stats_frame = tk.Frame(main_container, bg="#313244", pady=8, padx=10)
         stats_frame.pack(fill="x", pady=5)
 
         self.lbl_sent_counter = tk.Label(
             stats_frame,
-            text="Gönderilen Mesaj: 0 / 666",
+            text="Gönderilen Mesaj: 0",
             font=("Segoe UI", 11, "bold"),
             bg="#313244",
             fg="#89b4fa"
         )
         self.lbl_sent_counter.pack(side="left", padx=10)
 
-        self.lbl_purchase_counter = tk.Label(
+        self.lbl_window_status = tk.Label(
             stats_frame,
-            text="Satın Alma Ekranı: 0 / 2",
-            font=("Segoe UI", 11, "bold"),
+            text="Hedef Pencere: —",
+            font=("Segoe UI", 10),
             bg="#313244",
             fg="#f9e2af"
         )
-        self.lbl_purchase_counter.pack(side="right", padx=10)
+        self.lbl_window_status.pack(side="right", padx=10)
 
-        # 2. Message Settings Group
+        # 2. Win32 Hedef Pencere & Koordinat Ayarları
+        target_frame = ttk.LabelFrame(main_container, text=" Hedef Pencere & Koordinat Ayarları ", padding=10)
+        target_frame.pack(fill="x", pady=5)
+
+        # Pencere başlığı
+        ttk.Label(target_frame, text="Pencere Başlığı:").grid(row=0, column=0, sticky="w", pady=2)
+        self.entry_window_keyword = ttk.Entry(target_frame, width=40)
+        self.entry_window_keyword.insert(0, config.WINDOW_TITLE_KEYWORD)
+        self.entry_window_keyword.grid(row=0, column=1, padx=5, pady=2, sticky="ew")
+
+        self.btn_find_window = tk.Button(
+            target_frame,
+            text="🔍 Pencereyi Bul",
+            font=("Segoe UI", 9, "bold"),
+            bg="#89b4fa",
+            fg="#11111b",
+            relief="flat",
+            padx=8, pady=2,
+            command=self.test_find_window
+        )
+        self.btn_find_window.grid(row=0, column=2, padx=5, pady=2)
+
+        # Koordinatlar
+        ttk.Label(target_frame, text="Chat Tıklama X:").grid(row=1, column=0, sticky="w", pady=2)
+        self.entry_click_x = ttk.Entry(target_frame, width=10)
+        self.entry_click_x.insert(0, str(config.DEFAULT_CLICK_X))
+        self.entry_click_x.grid(row=1, column=1, padx=5, pady=2, sticky="w")
+
+        ttk.Label(target_frame, text="Chat Tıklama Y:").grid(row=2, column=0, sticky="w", pady=2)
+        self.entry_click_y = ttk.Entry(target_frame, width=10)
+        self.entry_click_y.insert(0, str(config.DEFAULT_CLICK_Y))
+        self.entry_click_y.grid(row=2, column=1, padx=5, pady=2, sticky="w")
+
+        # Koordinat bilgi etiketi
+        self.lbl_coord_info = tk.Label(
+            target_frame,
+            text="📍 Ekran mutlak koordinatları (pyautogui.position() ile alınan)",
+            font=("Segoe UI", 8),
+            bg="#1e1e2e",
+            fg="#6c7086"
+        )
+        self.lbl_coord_info.grid(row=3, column=0, columnspan=3, sticky="w", pady=(2, 0))
+
+        # WM_CHAR fallback seçeneği
+        self.use_wm_char_var = tk.BooleanVar(value=False)
+        self.chk_wm_char = tk.Checkbutton(
+            target_frame,
+            text="Ctrl+V çalışmazsa karakter karakter gönder (WM_CHAR fallback)",
+            variable=self.use_wm_char_var,
+            bg="#1e1e2e",
+            fg="#cdd6f4",
+            selectcolor="#313244",
+            activebackground="#1e1e2e",
+            activeforeground="#cdd6f4",
+            font=("Segoe UI", 9)
+        )
+        self.chk_wm_char.grid(row=4, column=0, columnspan=3, sticky="w", pady=(5, 0))
+
+        target_frame.columnconfigure(1, weight=1)
+
+        # 3. Message Settings Group
         msg_frame = ttk.LabelFrame(main_container, text=" Mesaj Ayarları ", padding=10)
         msg_frame.pack(fill="x", pady=5)
 
@@ -91,27 +153,21 @@ class BotGUI:
 
         msg_frame.columnconfigure(1, weight=1)
 
-        # 3. Timing & Purchase Settings Group
-        settings_frame = ttk.LabelFrame(main_container, text=" Zamanlama & Satın Alma Ayarları ", padding=10)
+        # 4. Timing Settings Group
+        settings_frame = ttk.LabelFrame(main_container, text=" Zamanlama Ayarları ", padding=10)
         settings_frame.pack(fill="x", pady=5)
 
-        ttk.Label(settings_frame, text="Mesajlar Arası Bekleme:").grid(row=0, column=0, sticky="w")
-        ttk.Label(settings_frame, text="1.0 Saniye (Sabit)", font=("Segoe UI", 9, "bold"), foreground="#fab387").grid(row=0, column=1, sticky="w", padx=5)
+        ttk.Label(settings_frame, text="Mesajlar Arası Bekleme (sn):").grid(row=0, column=0, sticky="w")
+        self.entry_inter_delay = ttk.Entry(settings_frame, width=8)
+        self.entry_inter_delay.insert(0, str(config.INTER_MESSAGE_DELAY))
+        self.entry_inter_delay.grid(row=0, column=1, sticky="w", padx=5)
 
         ttk.Label(settings_frame, text="Reklam Döngü Aralığı (sn):").grid(row=0, column=2, sticky="e", padx=(20, 5))
         self.entry_interval = ttk.Entry(settings_frame, width=8)
         self.entry_interval.insert(0, str(config.DEFAULT_CYCLE_INTERVAL))
         self.entry_interval.grid(row=0, column=3, sticky="w")
 
-        ttk.Label(settings_frame, text="Satın Alınacak Borazan Miktarı:").grid(row=1, column=0, sticky="w", pady=(8,0))
-        self.entry_quantity = ttk.Entry(settings_frame, width=8)
-        self.entry_quantity.insert(0, config.PURCHASE_QUANTITY)
-        self.entry_quantity.grid(row=1, column=1, sticky="w", pady=(8,0), padx=5)
-
-        ttk.Label(settings_frame, text="Maksimum Satın Alma Limiti:").grid(row=1, column=2, sticky="e", pady=(8,0), padx=(20, 5))
-        ttk.Label(settings_frame, text="1 Defa (2. Ekran = UYARI)", font=("Segoe UI", 9, "bold"), foreground="#f38ba8").grid(row=1, column=3, sticky="w", pady=(8,0))
-
-        # 4. Action Buttons Frame
+        # 5. Action Buttons Frame
         btn_frame = tk.Frame(main_container, bg="#1e1e2e")
         btn_frame.pack(fill="x", pady=10)
 
@@ -164,7 +220,7 @@ class BotGUI:
         )
         self.lbl_status.pack(side="right", padx=5)
 
-        # 5. Console Log Group
+        # 6. Console Log Group
         log_frame = ttk.LabelFrame(main_container, text=" İşlem Günlüğü (Console Log) ", padding=5)
         log_frame.pack(fill="both", expand=True, pady=5)
 
@@ -184,18 +240,75 @@ class BotGUI:
 
         self.root.bind("<F8>", lambda e: self.stop_bot())
 
+    def test_find_window(self):
+        """Pencere arama testi."""
+        keyword = self.entry_window_keyword.get().strip()
+        if not keyword:
+            messagebox.showerror("Hata", "Pencere başlığı anahtar kelimesi boş olamaz!")
+            return
+
+        result = find_window_by_keyword(keyword)
+        if result:
+            hwnd, title = result
+            self.lbl_window_status.config(
+                text=f"✅ Bulundu: {title[:35]}...",
+                fg="#a6e3a1"
+            )
+            self.log_message(f"[{__import__('time').strftime('%H:%M:%S')}] ✅ Pencere bulundu: '{title}' (HWND: {hwnd})")
+
+            # Koordinat çevirisi bilgisi
+            try:
+                cx = int(self.entry_click_x.get())
+                cy = int(self.entry_click_y.get())
+                client_x, client_y = screen_to_client_coords(hwnd, cx, cy)
+                self.log_message(f"[{__import__('time').strftime('%H:%M:%S')}] 📍 Koordinat çevirisi: Ekran({cx},{cy}) → Pencere({client_x},{client_y})")
+            except ValueError:
+                pass
+        else:
+            self.lbl_window_status.config(
+                text=f"❌ '{keyword}' bulunamadı",
+                fg="#f38ba8"
+            )
+            self.log_message(f"[{__import__('time').strftime('%H:%M:%S')}] ❌ '{keyword}' başlıklı pencere bulunamadı!")
+
     def start_bot(self):
         msg1 = self.entry_msg1.get().strip()
         msg2 = self.entry_msg2.get().strip()
         interval = self.entry_interval.get().strip()
-        quantity = self.entry_quantity.get().strip()
+        keyword = self.entry_window_keyword.get().strip()
 
         if not msg1 or not msg2:
             messagebox.showerror("Hata", "Mesaj alanları boş bırakılamaz!")
             return
 
-        self.engine.purchase_quantity = quantity if quantity else config.PURCHASE_QUANTITY
-        self.engine.start(msg1=msg1, msg2=msg2, interval=interval)
+        if not keyword:
+            messagebox.showerror("Hata", "Pencere başlığı anahtar kelimesi boş olamaz!")
+            return
+
+        try:
+            click_x = int(self.entry_click_x.get().strip())
+            click_y = int(self.entry_click_y.get().strip())
+        except ValueError:
+            messagebox.showerror("Hata", "X ve Y koordinatları sayı olmalıdır!")
+            return
+
+        try:
+            inter_delay = float(self.entry_inter_delay.get().strip())
+            self.engine.inter_delay = inter_delay
+        except ValueError:
+            pass
+
+        # WM_CHAR fallback ayarı
+        self.engine.use_wm_char_fallback = self.use_wm_char_var.get()
+
+        self.engine.start(
+            msg1=msg1,
+            msg2=msg2,
+            interval=interval,
+            click_x=click_x,
+            click_y=click_y,
+            keyword=keyword
+        )
 
     def pause_bot(self):
         self.engine.pause()
@@ -212,10 +325,9 @@ class BotGUI:
         fg_color = colors.get(status_text, "#cdd6f4")
         self.lbl_status.config(text=f"DURUM: {status_text.upper()}", fg=fg_color)
 
-    def update_counters(self, messages_sent, purchase_count):
+    def update_counters(self, messages_sent):
         def _update():
-            self.lbl_sent_counter.config(text=f"Gönderilen Mesaj: {messages_sent} / 666")
-            self.lbl_purchase_counter.config(text=f"Satın Alma Ekranı: {purchase_count} / 2")
+            self.lbl_sent_counter.config(text=f"Gönderilen Mesaj: {messages_sent}")
         self.root.after(0, _update)
 
     def log_message(self, text):
@@ -224,24 +336,24 @@ class BotGUI:
             self.txt_log.see(tk.END)
         self.root.after(0, _append)
 
-    def show_haklarimiz_bitti_alert(self, title, message):
-        """Displays custom warning alert window on main thread when limit is reached."""
+    def show_alert(self, title, message):
+        """Uyarı popup gösterir."""
         def _alert():
             alert_win = tk.Toplevel(self.root)
             alert_win.title(title)
-            alert_win.geometry("440x240")
+            alert_win.geometry("440x200")
             alert_win.configure(bg="#f38ba8")
             alert_win.attributes("-topmost", True)
             alert_win.grab_set()
 
             alert_win.update_idletasks()
             x = (alert_win.winfo_screenwidth() // 2) - (440 // 2)
-            y = (alert_win.winfo_screenheight() // 2) - (240 // 2)
+            y = (alert_win.winfo_screenheight() // 2) - (200 // 2)
             alert_win.geometry(f"+{x}+{y}")
 
             lbl_header = tk.Label(
                 alert_win, 
-                text="⛔ UYARI!", 
+                text="⚠️ UYARI", 
                 font=("Segoe UI", 16, "bold"), 
                 bg="#f38ba8", 
                 fg="#11111b"
@@ -250,17 +362,18 @@ class BotGUI:
 
             lbl_msg = tk.Label(
                 alert_win, 
-                text=f"HAKLARIMIZ BİTTİ!\n\nSatın alma ekranı 2. defa karşılaşıldı.\n666 Borazan mesajı tamamlandı ve haklar tükendi.", 
-                font=("Segoe UI", 11, "bold"), 
+                text=message, 
+                font=("Segoe UI", 11), 
                 bg="#f38ba8", 
                 fg="#11111b",
-                justify="center"
+                justify="center",
+                wraplength=400
             )
             lbl_msg.pack(pady=10)
 
             btn_ok = tk.Button(
                 alert_win, 
-                text="TAMAM (ANLADIM)", 
+                text="TAMAM", 
                 font=("Segoe UI", 11, "bold"),
                 bg="#11111b", 
                 fg="#f38ba8",

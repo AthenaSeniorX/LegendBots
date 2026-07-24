@@ -3,7 +3,7 @@ from tkinter import ttk, messagebox
 import ctypes
 import ctypes.wintypes
 import config
-from bot_engine import LegendBotEngine, find_window_by_keyword, screen_to_client_coords
+from bot_engine import LegendBotEngine, find_window_by_keyword
 
 class BotGUI:
     def __init__(self, root):
@@ -29,6 +29,7 @@ class BotGUI:
         style.configure("TLabel", background="#1e1e2e", foreground="#cdd6f4")
         style.configure("TLabelframe", background="#1e1e2e", foreground="#89b4fa")
         style.configure("TLabelframe.Label", background="#1e1e2e", foreground="#89b4fa", font=("Segoe UI", 11, "bold"))
+        style.configure("TEntry", foreground="black", fieldbackground="white")
 
         # Header Title Banner
         header_frame = tk.Frame(self.root, bg="#313244", pady=10)
@@ -256,12 +257,11 @@ class BotGUI:
             )
             self.log_message(f"[{__import__('time').strftime('%H:%M:%S')}] ✅ Pencere bulundu: '{title}' (HWND: {hwnd})")
 
-            # Koordinat çevirisi bilgisi
+            # Koordinat bilgisi
             try:
                 cx = int(self.entry_click_x.get())
                 cy = int(self.entry_click_y.get())
-                client_x, client_y = screen_to_client_coords(hwnd, cx, cy)
-                self.log_message(f"[{__import__('time').strftime('%H:%M:%S')}] 📍 Koordinat çevirisi: Ekran({cx},{cy}) → Pencere({client_x},{client_y})")
+                self.log_message(f"[{__import__('time').strftime('%H:%M:%S')}] 📍 Tıklama koordinatı: ({cx}, {cy})")
             except ValueError:
                 pass
         else:
@@ -298,8 +298,8 @@ class BotGUI:
         except ValueError:
             pass
 
-        # WM_CHAR fallback ayarı
-        self.engine.use_wm_char_fallback = self.use_wm_char_var.get()
+        # Karakter karakter yazma fallback ayarı
+        self.engine.use_type_fallback = self.use_wm_char_var.get()
 
         self.engine.start(
             msg1=msg1,

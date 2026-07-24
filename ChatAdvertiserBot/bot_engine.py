@@ -1,22 +1,61 @@
 import time
 import threading
-import subprocess
-import os
 import ctypes
 import ctypes.wintypes
 import config
 
 # ============================================================
-#  Win32 SendInput API — Sistemsel Gerçek Tıklama & Klavye
-#  PostMessage oyunlarda çalışmaz, SendInput gerçek input gönderir.
-#  tscon ile masaüstü oturumu açık kaldığında RDP kapalı bile çalışır.
+#  Win32 API Constants & Functions
 # ============================================================
 
 user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
 
-# --- ctypes Return Type Düzeltmeleri (64-bit Windows uyumluluğu) ---
-# GlobalAlloc, GlobalLock, GlobalUnlock: pointer döner, varsayılan c_int 64-bit'te yanlış
+WM_LBUTTONDOWN = 0x0201
+WM_LBUTTONUP = 0x0202
+WM_MOUSEMOVE = 0x0200
+WM_KEYDOWN = 0x0100
+WM_KEYUP = 0x0101
+WM_CHAR = 0x0102
+MK_LBUTTON = 0x0001
+VK_RETURN = 0x0D
+VK_CONTROL = 0x11
+VK_V = 0x56
+
+INPUT_MOUSE = 0
+INPUT_KEYBOARD = 1
+MOUSEEVENTF_MOVE = 0x0001
+MOUSEEVENTF_LEFTDOWN = 0x0002
+MOUSEEVENTF_LEFTUP = 0x0004
+MOUSEEVENTF_ABSOLUTE = 0x8000
+KEYEVENTF_KEYUP = 0x0002
+KEYEVENTF_UNICODE = 0x0004
+
+# ctypes return & arg types
+user32.PostMessageW.restype = ctypes.c_bool
+user32.PostMessageW.argtypes = [ctypes.wintypes.HWND, ctypes.c_uint, ctypes.wintypes.WPARAM, ctypes.wintypes.LPARAM]
+
+user32.SendMessageW.restype = ctypes.c_ssize_t
+user32.SendMessageW.argtypes = [ctypes.wintypes.HWND, ctypes.c_uint, ctypes.wintypes.WPARAM, ctypes.wintypes.LPARAM]
+
+user32.ScreenToClient.restype = ctypes.c_bool
+user32.ScreenToClient.argtypes = [ctypes.wintypes.HWND, ctypes.POINTER(ctypes.wintypes.POINT)]
+
+user32.WindowFromPoint.restype = ctypes.wintypes.HWND
+user32.WindowFromPoint.argtypes = [ctypes.wintypes.POINT]
+
+user32.IsChild.restype = ctypes.c_bool
+user32.IsChild.argtypes = [ctypes.wintypes.HWND, ctypes.wintypes.HWND]
+
+user32.IsWindow.restype = ctypes.c_bool
+user32.IsWindow.argtypes = [ctypes.wintypes.HWND]
+
+user32.IsWindowVisible.restype = ctypes.c_bool
+user32.IsWindowVisible.argtypes = [ctypes.wintypes.HWND]
+
+user32.SetForegroundWindow.restype = ctypes.c_bool
+user32.SetForegroundWindow.argtypes = [ctypes.wintypes.HWND]
+
 kernel32.GlobalAlloc.restype = ctypes.c_void_p
 kernel32.GlobalAlloc.argtypes = [ctypes.c_uint, ctypes.c_size_t]
 kernel32.GlobalLock.restype = ctypes.c_void_p
@@ -24,7 +63,6 @@ kernel32.GlobalLock.argtypes = [ctypes.c_void_p]
 kernel32.GlobalUnlock.restype = ctypes.c_bool
 kernel32.GlobalUnlock.argtypes = [ctypes.c_void_p]
 
-# Clipboard fonksiyonları
 user32.OpenClipboard.restype = ctypes.c_bool
 user32.OpenClipboard.argtypes = [ctypes.c_void_p]
 user32.CloseClipboard.restype = ctypes.c_bool
@@ -33,22 +71,6 @@ user32.SetClipboardData.restype = ctypes.c_void_p
 user32.SetClipboardData.argtypes = [ctypes.c_uint, ctypes.c_void_p]
 user32.GetClipboardData.restype = ctypes.c_void_p
 user32.GetClipboardData.argtypes = [ctypes.c_uint]
-
-# --- SendInput Yapıları ---
-INPUT_MOUSE = 0
-INPUT_KEYBOARD = 1
-
-MOUSEEVENTF_MOVE = 0x0001
-MOUSEEVENTF_LEFTDOWN = 0x0002
-MOUSEEVENTF_LEFTUP = 0x0004
-MOUSEEVENTF_ABSOLUTE = 0x8000
-
-KEYEVENTF_KEYUP = 0x0002
-KEYEVENTF_UNICODE = 0x0004
-
-VK_RETURN = 0x0D
-VK_CONTROL = 0x11
-VK_V = 0x56
 
 
 class MOUSEINPUT(ctypes.Structure):
@@ -86,8 +108,11 @@ class INPUT(ctypes.Structure):
     ]
 
 
-# --- Window Finding ---
 WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
+
+
+def MAKELPARAM(x, y):
+    return (y << 16) | (x & 0xFFFF)
 
 
 def find_window_by_keyword(keyword):
@@ -117,35 +142,89 @@ def find_window_by_keyword(keyword):
     return None
 
 
-# --- SendInput Helpers ---
+def get_target_hwnd_at_point(screen_x, screen_y, parent_hwnd):
+    """
+    Verilen ekran koordinatındaki alt pencereyi (child HWND) bulur.
+    Eğer alt pencere bulunursa onu, bulunamazsa parent_hwnd döner.
+    """
+    pt = ctypes.wintypes.POINT(screen_x, screen_y)
+    child = user32.WindowFromPoint(pt)
+    if child and (child == parent_hwnd or user32.IsChild(parent_hwnd, child)):
+        return child
+    return parent_hwnd
+
+
+def screen_to_client_coords(hwnd, screen_x, screen_y):
+    """
+    Ekran mutlak koordinatını hedef pencerenin client (iç) koordinatına çevirir.
+    """
+    pt = ctypes.wintypes.POINT(screen_x, screen_y)
+    user32.ScreenToClient(hwnd, ctypes.byref(pt))
+    return pt.x, pt.y
+
+
+# ============================================================
+#  PostMessage (Arka Plan - RDP Kapalıyken %100 Çalışan Mod)
+# ============================================================
+
+def post_click(parent_hwnd, screen_x, screen_y):
+    """
+    PostMessage ile arka planda tıklama gönderir.
+    Ekran çözünürlüğünden, RDP durumundan veya görünürlükten etkilenmez.
+    """
+    target_hwnd = get_target_hwnd_at_point(screen_x, screen_y, parent_hwnd)
+    client_x, client_y = screen_to_client_coords(target_hwnd, screen_x, screen_y)
+    lParam = MAKELPARAM(client_x, client_y)
+
+    user32.PostMessageW(target_hwnd, WM_MOUSEMOVE, 0, lParam)
+    time.sleep(0.02)
+    user32.PostMessageW(target_hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lParam)
+    time.sleep(0.05)
+    user32.PostMessageW(target_hwnd, WM_LBUTTONUP, 0, lParam)
+    return target_hwnd, client_x, client_y
+
+
+def post_type_text(target_hwnd, text):
+    """
+    WM_CHAR mesajı ile her karakteri doğrudan pencere mesaj kuyruğuna gönderir.
+    Clipboard, Ctrl+V veya dil düzeninden etkilenmez.
+    """
+    for char in text:
+        user32.PostMessageW(target_hwnd, WM_CHAR, ord(char), 0)
+        time.sleep(0.008)
+
+
+def post_enter(target_hwnd):
+    """
+    Enter tuşunu PostMessage ile arka planda gönderir.
+    """
+    user32.PostMessageW(target_hwnd, WM_KEYDOWN, VK_RETURN, 0)
+    time.sleep(0.03)
+    user32.PostMessageW(target_hwnd, WM_KEYUP, VK_RETURN, 0)
+
+
+# ============================================================
+#  SendInput (Ön Plan Modu)
+# ============================================================
 
 def _send_input(*inputs):
-    """SendInput API çağrısı."""
     n = len(inputs)
     arr = (INPUT * n)(*inputs)
     user32.SendInput(n, arr, ctypes.sizeof(INPUT))
 
 
 def _screen_to_absolute(x, y):
-    """
-    Ekran piksel koordinatlarını SendInput'un istediği
-    0-65535 normalized koordinatlara çevirir.
-    """
-    screen_w = user32.GetSystemMetrics(0)  # SM_CXSCREEN
-    screen_h = user32.GetSystemMetrics(1)  # SM_CYSCREEN
+    screen_w = user32.GetSystemMetrics(0)
+    screen_h = user32.GetSystemMetrics(1)
+    if screen_w <= 0: screen_w = 1920
+    if screen_h <= 0: screen_h = 1080
     abs_x = int(x * 65536 / screen_w)
     abs_y = int(y * 65536 / screen_h)
     return abs_x, abs_y
 
 
-def real_click(screen_x, screen_y):
-    """
-    Ekran koordinatına GERÇEK sistemsel tıklama gönderir.
-    SendInput kullanır — oyunlar dahil tüm uygulamalarda çalışır.
-    """
+def sendinput_click(screen_x, screen_y):
     abs_x, abs_y = _screen_to_absolute(screen_x, screen_y)
-
-    # 1. Fareyi pozisyona taşı
     move = INPUT()
     move.type = INPUT_MOUSE
     move.union.mi.dx = abs_x
@@ -154,7 +233,6 @@ def real_click(screen_x, screen_y):
     _send_input(move)
     time.sleep(0.03)
 
-    # 2. Sol tıklama (basma + bırakma)
     down = INPUT()
     down.type = INPUT_MOUSE
     down.union.mi.dx = abs_x
@@ -171,53 +249,7 @@ def real_click(screen_x, screen_y):
     _send_input(up)
 
 
-def real_key_press(vk_code):
-    """Tek bir tuşa gerçek basma + bırakma."""
-    down = INPUT()
-    down.type = INPUT_KEYBOARD
-    down.union.ki.wVk = vk_code
-
-    up = INPUT()
-    up.type = INPUT_KEYBOARD
-    up.union.ki.wVk = vk_code
-    up.union.ki.dwFlags = KEYEVENTF_KEYUP
-
-    _send_input(down)
-    time.sleep(0.03)
-    _send_input(up)
-
-
-def real_hotkey(vk_modifier, vk_key):
-    """Modifier + Key kombinasyonu (örn: Ctrl+V)."""
-    mod_down = INPUT()
-    mod_down.type = INPUT_KEYBOARD
-    mod_down.union.ki.wVk = vk_modifier
-
-    key_down = INPUT()
-    key_down.type = INPUT_KEYBOARD
-    key_down.union.ki.wVk = vk_key
-
-    key_up = INPUT()
-    key_up.type = INPUT_KEYBOARD
-    key_up.union.ki.wVk = vk_key
-    key_up.union.ki.dwFlags = KEYEVENTF_KEYUP
-
-    mod_up = INPUT()
-    mod_up.type = INPUT_KEYBOARD
-    mod_up.union.ki.wVk = vk_modifier
-    mod_up.union.ki.dwFlags = KEYEVENTF_KEYUP
-
-    _send_input(mod_down)
-    time.sleep(0.02)
-    _send_input(key_down)
-    time.sleep(0.02)
-    _send_input(key_up)
-    time.sleep(0.02)
-    _send_input(mod_up)
-
-
-def real_type_text(text):
-    """Metin karakterlerini tek tek SendInput ile yazar (unicode destekli)."""
+def sendinput_type_text(text):
     for char in text:
         code = ord(char)
         down = INPUT()
@@ -236,226 +268,23 @@ def real_type_text(text):
         time.sleep(0.005)
 
 
-def clipboard_set(text):
-    """
-    Win32 API ile doğrudan clipboard'a yazar.
-    Thread-safe ve güvenilir — pyperclip'e bağımlı değil.
-    """
-    CF_UNICODETEXT = 13
-    GMEM_MOVEABLE = 0x0002
-    
-    # Metin verisini hazırla (UTF-16-LE, null terminated)
-    data = text.encode('utf-16-le') + b'\x00\x00'
-    
-    max_attempts = 5
-    for attempt in range(max_attempts):
-        try:
-            if user32.OpenClipboard(0):
-                user32.EmptyClipboard()
-                h = kernel32.GlobalAlloc(GMEM_MOVEABLE, len(data))
-                if h:
-                    ptr = kernel32.GlobalLock(h)
-                    if ptr:
-                        ctypes.memmove(ptr, data, len(data))
-                        kernel32.GlobalUnlock(h)
-                        user32.SetClipboardData(CF_UNICODETEXT, h)
-                user32.CloseClipboard()
-                return True
-            else:
-                # Clipboard başka bir process tarafından kullanılıyor, bekle
-                time.sleep(0.05)
-        except Exception:
-            try:
-                user32.CloseClipboard()
-            except Exception:
-                pass
-            time.sleep(0.05)
-    return False
+def sendinput_enter():
+    down = INPUT()
+    down.type = INPUT_KEYBOARD
+    down.union.ki.wVk = VK_RETURN
 
+    up = INPUT()
+    up.type = INPUT_KEYBOARD
+    up.union.ki.wVk = VK_RETURN
+    up.union.ki.dwFlags = KEYEVENTF_KEYUP
 
-def clipboard_get():
-    """Clipboard'daki metni okur (doğrulama için)."""
-    CF_UNICODETEXT = 13
-    
-    try:
-        if user32.OpenClipboard(0):
-            h = user32.GetClipboardData(CF_UNICODETEXT)
-            if h:
-                ptr = kernel32.GlobalLock(h)
-                if ptr:
-                    text = ctypes.wstring_at(ptr)
-                    kernel32.GlobalUnlock(h)
-                    user32.CloseClipboard()
-                    return text
-            user32.CloseClipboard()
-    except Exception:
-        try:
-            user32.CloseClipboard()
-        except Exception:
-            pass
-    return None
-
-
-def real_paste(text):
-    """
-    Clipboard'a yaz + doğrula + Ctrl+V ile yapıştır.
-    Thread-safe Win32 clipboard API kullanır.
-    """
-    # 1. Clipboard'a yaz
-    clipboard_set(text)
-    time.sleep(0.10)
-    
-    # 2. Doğrula — clipboard'da doğru metin var mı?
-    verify = clipboard_get()
-    if verify and verify.strip() != text.strip():
-        # Tekrar dene
-        time.sleep(0.05)
-        clipboard_set(text)
-        time.sleep(0.10)
-    
-    # 3. Ctrl+V gönder
-    real_hotkey(VK_CONTROL, VK_V)
-
-
-def bring_window_to_front(hwnd):
-    """Pencereyi ön plana getirir (odaklar)."""
-    if hwnd and user32.IsWindow(hwnd):
-        # Minimize edilmişse geri aç
-        if user32.IsIconic(hwnd):
-            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
-            time.sleep(0.2)
-        user32.SetForegroundWindow(hwnd)
-        time.sleep(0.1)
-        return True
-    return False
-
-
-def get_window_rect(hwnd):
-    """
-    Pencere konumunu ve boyutunu döner.
-    Returns: (left, top, right, bottom) veya None
-    """
-    try:
-        rect = ctypes.wintypes.RECT()
-        if user32.GetWindowRect(hwnd, ctypes.byref(rect)):
-            return (rect.left, rect.top, rect.right, rect.bottom)
-    except Exception:
-        pass
-    return None
+    _send_input(down)
+    time.sleep(0.03)
+    _send_input(up)
 
 
 # ============================================================
-#  Oturum Yönetimi — RDP Kesildiğinde Otomatik Kurtarma
-# ============================================================
-
-CREATE_NO_WINDOW = 0x08000000
-
-
-def is_admin():
-    """Yönetici olarak çalışıp çalışmadığını kontrol eder."""
-    try:
-        return ctypes.windll.shell32.IsUserAnAdmin() != 0
-    except Exception:
-        return False
-
-
-def is_desktop_active():
-    """
-    Masaüstü oturumunun aktif olup olmadığını kontrol eder.
-    RDP kesilmiş ve tscon çalıştırılmamışsa False döner.
-    """
-    try:
-        # GetCursorPos aktif masaüstü olmadan başarısız olur
-        point = ctypes.wintypes.POINT()
-        result = user32.GetCursorPos(ctypes.byref(point))
-        if not result:
-            return False
-        
-        # Ek kontrol: GetForegroundWindow null dönerse oturum inaktif
-        fg = user32.GetForegroundWindow()
-        # fg 0 olabilir ama masaüstü aktif olabilir, bu yüzden sadece GetCursorPos yeterli
-        return True
-    except Exception:
-        return False
-
-
-def is_session_disconnected():
-    """
-    Windows oturumunun 'Disconnected' durumda olup olmadığını kontrol eder.
-    `query session` komutunu kullanarak aktif oturumu kontrol eder.
-    """
-    try:
-        result = subprocess.run(
-            ['query', 'session'],
-            capture_output=True, text=True, timeout=5,
-            creationflags=CREATE_NO_WINDOW
-        )
-        for line in result.stdout.splitlines():
-            # Aktif oturum '>' ile işaretlenir
-            if '>' in line:
-                line_lower = line.lower()
-                if 'disc' in line_lower:
-                    return True
-        return False
-    except Exception:
-        # query session başarısız olursa, masaüstü kontrolü yap
-        return not is_desktop_active()
-
-
-def switch_to_console():
-    """
-    Disconnected RDP oturumunu fiziksel konsola aktarır.
-    Bu, masaüstünü yeniden aktif eder ve SendInput çalışmaya devam eder.
-    Yönetici izni gerektirir.
-    """
-    try:
-        # Yöntem 1: query session ile oturum ID'sini bul
-        result = subprocess.run(
-            ['query', 'session'],
-            capture_output=True, text=True, timeout=5,
-            creationflags=CREATE_NO_WINDOW
-        )
-        
-        for line in result.stdout.splitlines():
-            if '>' in line:  # Mevcut oturum
-                parts = line.strip().lstrip('>').split()
-                for part in parts:
-                    if part.isdigit():
-                        subprocess.run(
-                            ['tscon', part, '/dest:console'],
-                            capture_output=True, timeout=10,
-                            creationflags=CREATE_NO_WINDOW
-                        )
-                        time.sleep(1.0)
-                        return True
-        
-        # Yöntem 2: SESSIONNAME ortam değişkeni
-        session_name = os.environ.get('SESSIONNAME', '')
-        if session_name and session_name.lower() != 'console':
-            subprocess.run(
-                ['tscon', session_name, '/dest:console'],
-                capture_output=True, timeout=10,
-                creationflags=CREATE_NO_WINDOW
-            )
-            time.sleep(1.0)
-            return True
-        
-        # Yöntem 3: Yaygın oturum ID'lerini dene
-        for sid in ['1', '2', '3']:
-            subprocess.run(
-                ['tscon', sid, '/dest:console'],
-                capture_output=True, timeout=10,
-                creationflags=CREATE_NO_WINDOW
-            )
-        
-        time.sleep(1.0)
-        return True
-    except Exception:
-        return False
-
-
-# ============================================================
-#  Bot Engine
+#  LegendBotEngine
 # ============================================================
 
 class LegendBotEngine:
@@ -474,14 +303,10 @@ class LegendBotEngine:
         self.cycle_interval = config.DEFAULT_CYCLE_INTERVAL
         self.inter_delay = config.INTER_MESSAGE_DELAY
 
-        # Koordinatlar (ekran mutlak — kullanıcının girdiği)
         self.click_x = config.DEFAULT_CLICK_X
         self.click_y = config.DEFAULT_CLICK_Y
-        # Pencere-relative koordinatlar (otomatik hesaplanır)
-        self.relative_x = 0
-        self.relative_y = 0
         self.window_keyword = config.WINDOW_TITLE_KEYWORD
-        self.use_type_fallback = False  # Ctrl+V yerine karakter karakter gönder
+        self.mode = "postmessage"  # "postmessage" (Arka Plan) veya "sendinput" (Ön Plan)
 
         self.target_hwnd = None
         self.target_title = ""
@@ -497,7 +322,6 @@ class LegendBotEngine:
         self.counter_cb(self.total_messages_sent)
 
     def find_target(self):
-        """Hedef pencereyi bulur."""
         result = find_window_by_keyword(self.window_keyword)
         if result:
             self.target_hwnd, self.target_title = result
@@ -506,7 +330,7 @@ class LegendBotEngine:
         self.target_title = ""
         return False
 
-    def start(self, msg1=None, msg2=None, interval=None, click_x=None, click_y=None, keyword=None):
+    def start(self, msg1=None, msg2=None, interval=None, click_x=None, click_y=None, keyword=None, mode=None):
         if self.is_running:
             self.log("Bot zaten çalışıyor.")
             return
@@ -517,35 +341,27 @@ class LegendBotEngine:
         if click_x is not None: self.click_x = int(click_x)
         if click_y is not None: self.click_y = int(click_y)
         if keyword: self.window_keyword = keyword
+        if mode: self.mode = mode
 
-        # Hedef pencereyi bul
         if not self.find_target():
             self.log(f"❌ HATA: '{self.window_keyword}' başlıklı pencere bulunamadı!")
             self.alert_cb("Pencere Bulunamadı", f"'{self.window_keyword}' başlığını içeren pencere bulunamadı.\n\nOyun istemcisinin açık olduğundan emin olun.")
             return
 
         self.log(f"✅ Hedef pencere bulundu: '{self.target_title}' (HWND: {self.target_hwnd})")
+        self.log(f"📍 Tıklama koordinatı: ({self.click_x}, {self.click_y})")
         
-        self.log(f"📍 Tıklama koordinatı (kullanıcı tanımlı): ({self.click_x}, {self.click_y})")
-        
-        self.log(f"📐 Ekran çözünürlüğü: {user32.GetSystemMetrics(0)}x{user32.GetSystemMetrics(1)}")
+        mode_name = "Arka Plan Modu (PostMessage - RDP Kapalıyken Çalışır)" if self.mode == "postmessage" else "Ön Plan Modu (SendInput)"
+        self.log(f"⚙️ Çalışma Modu: {mode_name}")
 
         self.is_running = True
         self.is_paused = False
         self.total_messages_sent = 0
         self.update_counters()
 
-        # Yönetici kontrolü
-        if is_admin():
-            self.log("✅ Yönetici izni mevcut — RDP kesilirse otomatik kurtarma aktif.")
-        else:
-            self.log("⚠️ Yönetici izni YOK! RDP kesilirse otomatik kurtarma çalışmayabilir.")
-            self.log("   Botu yönetici olarak çalıştırmanız önerilir.")
-
         self._thread = threading.Thread(target=self._run_loop, daemon=True)
         self._thread.start()
-        self.log("🚀 Bot başlatıldı. SendInput + otomatik oturum kurtarma aktif.")
-        self.log("ℹ️  RDP bağlantısını istediğiniz zaman kapatabilirsiniz, bot otomatik devam eder.")
+        self.log("🚀 Bot başlatıldı. Döngü çalışıyor.")
         self.update_status("Çalışıyor")
 
     def pause(self):
@@ -562,77 +378,71 @@ class LegendBotEngine:
         self.log("Bot durduruldu.")
         self.update_status("Durduruldu")
 
-    def _ensure_window_focused(self):
-        """Hedef pencerenin açık ve odaklı olduğundan emin ol. Masaüstü kontrolü dahil."""
-        # Önce masaüstünün aktif olduğunu kontrol et
-        if not is_desktop_active():
-            self.log("⚠️ Masaüstü oturumu aktif değil! Oturum konsola aktarılıyor...")
-            if switch_to_console():
-                self.log("✅ Oturum konsola aktarıldı. 2 saniye bekleniyor...")
-                time.sleep(2.0)
-            else:
-                self.log("❌ Konsola aktarma başarısız! Yönetici izni gerekli olabilir.")
-                return False
-        
-        if not self.target_hwnd or not user32.IsWindow(self.target_hwnd):
-            self.log("⚠️ Hedef pencere kayboldu, yeniden aranıyor...")
-            if not self.find_target():
-                self.log("❌ Hedef pencere bulunamadı!")
-                return False
-            self.log(f"✅ Pencere yeniden bulundu: '{self.target_title}'")
+    def test_send_once(self, text, click_x=None, click_y=None, keyword=None, mode=None):
+        """
+        Tek bir mesajı test amaçlı anında gönderir.
+        """
+        cx = int(click_x) if click_x is not None else self.click_x
+        cy = int(click_y) if click_y is not None else self.click_y
+        kw = keyword or self.window_keyword
+        m = mode or self.mode
 
-        # Pencereyi ön plana getir (tıklamanın doğru pencereye gitmesi için)
-        bring_window_to_front(self.target_hwnd)
+        target = find_window_by_keyword(kw)
+        if not target:
+            self.log(f"❌ TEST HATA: '{kw}' başlıklı pencere bulunamadı!")
+            return False
+
+        hwnd, title = target
+        self.log(f"🧪 Test mesajı gönderiliyor -> HWND:{hwnd} ('{title}') | Koord: ({cx},{cy}) | Mod: {m}")
+
+        if m == "postmessage":
+            target_hwnd, client_x, client_y = post_click(hwnd, cx, cy)
+            self.log(f"   📍 PostMessage tıklandı -> Child HWND: {target_hwnd} | Client Koord: ({client_x}, {client_y})")
+            time.sleep(0.25)
+            post_type_text(target_hwnd, text)
+            time.sleep(0.25)
+            post_enter(target_hwnd)
+        else:
+            if user32.IsWindow(hwnd):
+                user32.SetForegroundWindow(hwnd)
+                time.sleep(0.1)
+            sendinput_click(cx, cy)
+            time.sleep(0.25)
+            sendinput_type_text(text)
+            time.sleep(0.25)
+            sendinput_enter()
+
+        self.log("✅ Test mesajı gönderildi!")
         return True
 
     def _send_message(self, text, msg_num):
         """
-        Tek bir mesajı gönderir:
-        1. Pencereyi ön plana getir
-        2. Chat kutusuna gerçek tıklama (SendInput)
-        3. Metni clipboard'a kopyala ve doğrula
-        4. Ctrl+V ile yapıştır
-        5. Enter ile gönder
+        Tek bir mesajı belirlenen modda gönderir.
         """
-        if not self._ensure_window_focused():
-            return False
+        if not self.target_hwnd or not user32.IsWindow(self.target_hwnd):
+            if not self.find_target():
+                self.log("❌ Hedef pencere bulunamadı!")
+                return False
 
-        # Chat kutusuna doğrudan kullanıcının girdiği koordinatlarda tıkla
-        real_click(self.click_x, self.click_y)
-        time.sleep(0.30)
-
-        # 2. Metni clipboard'a kopyala ve yapıştır
-        self.log(f"📋 Clipboard'a yazılıyor: '{text[:40]}...'")
-        
-        if self.use_type_fallback:
-            real_type_text(text)
+        if self.mode == "postmessage":
+            # PostMessage: Arka Plan Modu (RDP kapalıyken de çalışır)
+            target_hwnd, client_x, client_y = post_click(self.target_hwnd, self.click_x, self.click_y)
+            time.sleep(0.25)
+            post_type_text(target_hwnd, text)
+            time.sleep(0.25)
+            post_enter(target_hwnd)
+            time.sleep(0.10)
         else:
-            # Clipboard'a yaz
-            if not clipboard_set(text):
-                self.log(f"⚠️ Clipboard yazma başarısız! Tekrar deneniyor...")
-                time.sleep(0.1)
-                clipboard_set(text)
-            
-            time.sleep(0.15)
-            
-            # Clipboard doğrulama
-            verify = clipboard_get()
-            if verify:
-                if verify.strip() == text.strip():
-                    self.log(f"✅ Clipboard doğrulandı.")
-                else:
-                    self.log(f"⚠️ Clipboard uyuşmuyor! Tekrar yazılıyor...")
-                    clipboard_set(text)
-                    time.sleep(0.15)
-            
-            # Ctrl+V ile yapıştır
-            real_hotkey(VK_CONTROL, VK_V)
-        
-        time.sleep(0.30)
-
-        # 3. Enter gönder
-        real_key_press(VK_RETURN)
-        time.sleep(0.10)
+            # SendInput: Ön Plan Modu
+            if user32.IsWindow(self.target_hwnd):
+                user32.SetForegroundWindow(self.target_hwnd)
+                time.sleep(0.10)
+            sendinput_click(self.click_x, self.click_y)
+            time.sleep(0.25)
+            sendinput_type_text(text)
+            time.sleep(0.25)
+            sendinput_enter()
+            time.sleep(0.10)
 
         self.total_messages_sent += 1
         self.update_counters()
@@ -640,7 +450,6 @@ class LegendBotEngine:
         return True
 
     def _interruptible_sleep(self, duration):
-        """Kesintiye uğrayabilen bekleme."""
         start = time.time()
         while time.time() - start < duration:
             if not self.is_running:
@@ -651,35 +460,15 @@ class LegendBotEngine:
         return True
 
     def _run_loop(self):
-        session_check_counter = 0
-        SESSION_CHECK_INTERVAL = 5  # Her 5 döngüde bir oturum kontrolü
-        
         while self.is_running:
             if self.is_paused:
                 time.sleep(0.5)
                 continue
 
-            # Periyodik oturum sağlık kontrolü
-            session_check_counter += 1
-            if session_check_counter >= SESSION_CHECK_INTERVAL:
-                session_check_counter = 0
-                if is_session_disconnected():
-                    self.log("🔌 RDP oturumu kesildi! Otomatik konsola aktarılıyor...")
-                    if switch_to_console():
-                        self.log("✅ Oturum konsola aktarıldı. Masaüstü yeniden aktif.")
-                        time.sleep(2.0)
-                        # Pencereyi yeniden bul (çözünürlük değişmiş olabilir)
-                        self.find_target()
-                    else:
-                        self.log("❌ Konsola aktarma başarısız. 10 saniye bekleniyor...")
-                        if not self._interruptible_sleep(10.0):
-                            break
-                        continue
-
             # Mesaj 1 gönder
             if not self._send_message(self.msg1, 1):
-                self.log("Mesaj 1 gönderilemedi. 5 saniye sonra tekrar denenecek...")
-                if not self._interruptible_sleep(5.0):
+                self.log("Mesaj 1 gönderilemedi. 3 saniye sonra tekrar denenecek...")
+                if not self._interruptible_sleep(3.0):
                     break
                 continue
 
@@ -690,8 +479,8 @@ class LegendBotEngine:
 
             # Mesaj 2 gönder
             if not self._send_message(self.msg2, 2):
-                self.log("Mesaj 2 gönderilemedi. 5 saniye sonra tekrar denenecek...")
-                if not self._interruptible_sleep(5.0):
+                self.log("Mesaj 2 gönderilemedi. 3 saniye sonra tekrar denenecek...")
+                if not self._interruptible_sleep(3.0):
                     break
                 continue
 

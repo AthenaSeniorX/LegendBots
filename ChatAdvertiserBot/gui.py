@@ -1,16 +1,14 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-import ctypes
-import ctypes.wintypes
 import config
 from bot_engine import LegendBotEngine, find_window_by_keyword
 
 class BotGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Legend Online - Arka Plan Chat Reklam Botu v2.0")
-        self.root.geometry("660x780")
-        self.root.minsize(620, 740)
+        self.root.title("Legend Online - Arka Plan Chat Reklam Botu v3.0")
+        self.root.geometry("680x820")
+        self.root.minsize(640, 780)
         self.root.configure(bg="#1e1e2e")
 
         self.engine = LegendBotEngine(
@@ -37,7 +35,7 @@ class BotGUI:
 
         title_label = tk.Label(
             header_frame, 
-            text="LEGEND ONLINE CHAT BOT v2.0", 
+            text="LEGEND ONLINE CHAT BOT v3.0", 
             font=("Segoe UI", 14, "bold"), 
             bg="#313244", 
             fg="#a6e3a1"
@@ -46,7 +44,7 @@ class BotGUI:
 
         subtitle_label = tk.Label(
             header_frame, 
-            text="Win32 API Arka Plan Modu — RDP Kapalıyken Bile Çalışır", 
+            text="Kesintisiz Arka Plan Modu (RDP Kapalıyken %100 Çalışır)", 
             font=("Segoe UI", 9), 
             bg="#313244", 
             fg="#bac2de"
@@ -84,7 +82,7 @@ class BotGUI:
 
         # Pencere başlığı
         ttk.Label(target_frame, text="Pencere Başlığı:").grid(row=0, column=0, sticky="w", pady=2)
-        self.entry_window_keyword = ttk.Entry(target_frame, width=40)
+        self.entry_window_keyword = ttk.Entry(target_frame, width=35)
         self.entry_window_keyword.insert(0, config.WINDOW_TITLE_KEYWORD)
         self.entry_window_keyword.grid(row=0, column=1, padx=5, pady=2, sticky="ew")
 
@@ -102,31 +100,42 @@ class BotGUI:
 
         # Koordinatlar
         ttk.Label(target_frame, text="Chat Tıklama X:").grid(row=1, column=0, sticky="w", pady=2)
-        self.entry_click_x = ttk.Entry(target_frame, width=10)
+        self.entry_click_x = ttk.Entry(target_frame, width=12)
         self.entry_click_x.insert(0, str(config.DEFAULT_CLICK_X))
         self.entry_click_x.grid(row=1, column=1, padx=5, pady=2, sticky="w")
 
         ttk.Label(target_frame, text="Chat Tıklama Y:").grid(row=2, column=0, sticky="w", pady=2)
-        self.entry_click_y = ttk.Entry(target_frame, width=10)
+        self.entry_click_y = ttk.Entry(target_frame, width=12)
         self.entry_click_y.insert(0, str(config.DEFAULT_CLICK_Y))
         self.entry_click_y.grid(row=2, column=1, padx=5, pady=2, sticky="w")
 
-        # Koordinat bilgi etiketi
-        self.lbl_coord_info = tk.Label(
-            target_frame,
-            text="📍 Ekran mutlak koordinatları (pyautogui.position() ile alınan)",
-            font=("Segoe UI", 8),
-            bg="#1e1e2e",
-            fg="#6c7086"
-        )
-        self.lbl_coord_info.grid(row=3, column=0, columnspan=3, sticky="w", pady=(2, 0))
+        # Çalışma Modu Seçimi
+        ttk.Label(target_frame, text="Çalışma Modu:").grid(row=3, column=0, sticky="w", pady=(8, 2))
+        
+        self.mode_var = tk.StringVar(value="postmessage")
+        
+        mode_radio_frame = tk.Frame(target_frame, bg="#1e1e2e")
+        mode_radio_frame.grid(row=3, column=1, columnspan=2, sticky="w", pady=(8, 2))
 
-        # WM_CHAR fallback seçeneği
-        self.use_wm_char_var = tk.BooleanVar(value=False)
-        self.chk_wm_char = tk.Checkbutton(
-            target_frame,
-            text="Ctrl+V çalışmazsa karakter karakter gönder (WM_CHAR fallback)",
-            variable=self.use_wm_char_var,
+        rb_pm = tk.Radiobutton(
+            mode_radio_frame,
+            text="Arka Plan (PostMessage — RDP Kapalıyken %100 Çalışır)",
+            variable=self.mode_var,
+            value="postmessage",
+            bg="#1e1e2e",
+            fg="#a6e3a1",
+            selectcolor="#313244",
+            activebackground="#1e1e2e",
+            activeforeground="#a6e3a1",
+            font=("Segoe UI", 9, "bold")
+        )
+        rb_pm.pack(anchor="w")
+
+        rb_si = tk.Radiobutton(
+            mode_radio_frame,
+            text="Ön Plan (SendInput — Fiziksel Fare)",
+            variable=self.mode_var,
+            value="sendinput",
             bg="#1e1e2e",
             fg="#cdd6f4",
             selectcolor="#313244",
@@ -134,7 +143,20 @@ class BotGUI:
             activeforeground="#cdd6f4",
             font=("Segoe UI", 9)
         )
-        self.chk_wm_char.grid(row=4, column=0, columnspan=3, sticky="w", pady=(5, 0))
+        rb_si.pack(anchor="w")
+
+        # Test Butonu
+        self.btn_test_once = tk.Button(
+            target_frame,
+            text="🧪 TEST MESAJI GÖNDER (1 KEZ)",
+            font=("Segoe UI", 9, "bold"),
+            bg="#f9e2af",
+            fg="#11111b",
+            relief="flat",
+            padx=10, pady=4,
+            command=self.test_send_once
+        )
+        self.btn_test_once.grid(row=4, column=0, columnspan=3, pady=(10, 2), sticky="ew")
 
         target_frame.columnconfigure(1, weight=1)
 
@@ -242,7 +264,6 @@ class BotGUI:
         self.root.bind("<F8>", lambda e: self.stop_bot())
 
     def test_find_window(self):
-        """Pencere arama testi."""
         keyword = self.entry_window_keyword.get().strip()
         if not keyword:
             messagebox.showerror("Hata", "Pencere başlığı anahtar kelimesi boş olamaz!")
@@ -256,14 +277,6 @@ class BotGUI:
                 fg="#a6e3a1"
             )
             self.log_message(f"[{__import__('time').strftime('%H:%M:%S')}] ✅ Pencere bulundu: '{title}' (HWND: {hwnd})")
-
-            # Koordinat bilgisi
-            try:
-                cx = int(self.entry_click_x.get())
-                cy = int(self.entry_click_y.get())
-                self.log_message(f"[{__import__('time').strftime('%H:%M:%S')}] 📍 Tıklama koordinatı: ({cx}, {cy})")
-            except ValueError:
-                pass
         else:
             self.lbl_window_status.config(
                 text=f"❌ '{keyword}' bulunamadı",
@@ -271,11 +284,35 @@ class BotGUI:
             )
             self.log_message(f"[{__import__('time').strftime('%H:%M:%S')}] ❌ '{keyword}' başlıklı pencere bulunamadı!")
 
+    def test_send_once(self):
+        msg1 = self.entry_msg1.get().strip()
+        keyword = self.entry_window_keyword.get().strip()
+        mode = self.mode_var.get()
+        try:
+            click_x = int(self.entry_click_x.get().strip())
+            click_y = int(self.entry_click_y.get().strip())
+        except ValueError:
+            messagebox.showerror("Hata", "X ve Y koordinatları geçerli sayı olmalıdır!")
+            return
+
+        if not msg1:
+            messagebox.showerror("Hata", "1. Mesaj boş olamaz!")
+            return
+
+        self.engine.test_send_once(
+            text=msg1,
+            click_x=click_x,
+            click_y=click_y,
+            keyword=keyword,
+            mode=mode
+        )
+
     def start_bot(self):
         msg1 = self.entry_msg1.get().strip()
         msg2 = self.entry_msg2.get().strip()
         interval = self.entry_interval.get().strip()
         keyword = self.entry_window_keyword.get().strip()
+        mode = self.mode_var.get()
 
         if not msg1 or not msg2:
             messagebox.showerror("Hata", "Mesaj alanları boş bırakılamaz!")
@@ -298,16 +335,14 @@ class BotGUI:
         except ValueError:
             pass
 
-        # Karakter karakter yazma fallback ayarı
-        self.engine.use_type_fallback = self.use_wm_char_var.get()
-
         self.engine.start(
             msg1=msg1,
             msg2=msg2,
             interval=interval,
             click_x=click_x,
             click_y=click_y,
-            keyword=keyword
+            keyword=keyword,
+            mode=mode
         )
 
     def pause_bot(self):
@@ -337,7 +372,6 @@ class BotGUI:
         self.root.after(0, _append)
 
     def show_alert(self, title, message):
-        """Uyarı popup gösterir."""
         def _alert():
             alert_win = tk.Toplevel(self.root)
             alert_win.title(title)

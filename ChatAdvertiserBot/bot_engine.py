@@ -1,5 +1,7 @@
 import time
 import threading
+import subprocess
+import os
 import ctypes
 import ctypes.wintypes
 import config
@@ -328,6 +330,130 @@ def bring_window_to_front(hwnd):
     return False
 
 
+def get_window_rect(hwnd):
+    """
+    Pencere konumunu ve boyutunu döner.
+    Returns: (left, top, right, bottom) veya None
+    """
+    try:
+        rect = ctypes.wintypes.RECT()
+        if user32.GetWindowRect(hwnd, ctypes.byref(rect)):
+            return (rect.left, rect.top, rect.right, rect.bottom)
+    except Exception:
+        pass
+    return None
+
+
+# ============================================================
+#  Oturum Yönetimi — RDP Kesildiğinde Otomatik Kurtarma
+# ============================================================
+
+CREATE_NO_WINDOW = 0x08000000
+
+
+def is_admin():
+    """Yönetici olarak çalışıp çalışmadığını kontrol eder."""
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0
+    except Exception:
+        return False
+
+
+def is_desktop_active():
+    """
+    Masaüstü oturumunun aktif olup olmadığını kontrol eder.
+    RDP kesilmiş ve tscon çalıştırılmamışsa False döner.
+    """
+    try:
+        # GetCursorPos aktif masaüstü olmadan başarısız olur
+        point = ctypes.wintypes.POINT()
+        result = user32.GetCursorPos(ctypes.byref(point))
+        if not result:
+            return False
+        
+        # Ek kontrol: GetForegroundWindow null dönerse oturum inaktif
+        fg = user32.GetForegroundWindow()
+        # fg 0 olabilir ama masaüstü aktif olabilir, bu yüzden sadece GetCursorPos yeterli
+        return True
+    except Exception:
+        return False
+
+
+def is_session_disconnected():
+    """
+    Windows oturumunun 'Disconnected' durumda olup olmadığını kontrol eder.
+    `query session` komutunu kullanarak aktif oturumu kontrol eder.
+    """
+    try:
+        result = subprocess.run(
+            ['query', 'session'],
+            capture_output=True, text=True, timeout=5,
+            creationflags=CREATE_NO_WINDOW
+        )
+        for line in result.stdout.splitlines():
+            # Aktif oturum '>' ile işaretlenir
+            if '>' in line:
+                line_lower = line.lower()
+                if 'disc' in line_lower:
+                    return True
+        return False
+    except Exception:
+        # query session başarısız olursa, masaüstü kontrolü yap
+        return not is_desktop_active()
+
+
+def switch_to_console():
+    """
+    Disconnected RDP oturumunu fiziksel konsola aktarır.
+    Bu, masaüstünü yeniden aktif eder ve SendInput çalışmaya devam eder.
+    Yönetici izni gerektirir.
+    """
+    try:
+        # Yöntem 1: query session ile oturum ID'sini bul
+        result = subprocess.run(
+            ['query', 'session'],
+            capture_output=True, text=True, timeout=5,
+            creationflags=CREATE_NO_WINDOW
+        )
+        
+        for line in result.stdout.splitlines():
+            if '>' in line:  # Mevcut oturum
+                parts = line.strip().lstrip('>').split()
+                for part in parts:
+                    if part.isdigit():
+                        subprocess.run(
+                            ['tscon', part, '/dest:console'],
+                            capture_output=True, timeout=10,
+                            creationflags=CREATE_NO_WINDOW
+                        )
+                        time.sleep(1.0)
+                        return True
+        
+        # Yöntem 2: SESSIONNAME ortam değişkeni
+        session_name = os.environ.get('SESSIONNAME', '')
+        if session_name and session_name.lower() != 'console':
+            subprocess.run(
+                ['tscon', session_name, '/dest:console'],
+                capture_output=True, timeout=10,
+                creationflags=CREATE_NO_WINDOW
+            )
+            time.sleep(1.0)
+            return True
+        
+        # Yöntem 3: Yaygın oturum ID'lerini dene
+        for sid in ['1', '2', '3']:
+            subprocess.run(
+                ['tscon', sid, '/dest:console'],
+                capture_output=True, timeout=10,
+                creationflags=CREATE_NO_WINDOW
+            )
+        
+        time.sleep(1.0)
+        return True
+    except Exception:
+        return False
+
+
 # ============================================================
 #  Bot Engine
 # ============================================================
@@ -348,9 +474,12 @@ class LegendBotEngine:
         self.cycle_interval = config.DEFAULT_CYCLE_INTERVAL
         self.inter_delay = config.INTER_MESSAGE_DELAY
 
-        # Koordinatlar (ekran mutlak)
+        # Koordinatlar (ekran mutlak — kullanıcının girdiği)
         self.click_x = config.DEFAULT_CLICK_X
         self.click_y = config.DEFAULT_CLICK_Y
+        # Pencere-relative koordinatlar (otomatik hesaplanır)
+        self.relative_x = 0
+        self.relative_y = 0
         self.window_keyword = config.WINDOW_TITLE_KEYWORD
         self.use_type_fallback = False  # Ctrl+V yerine karakter karakter gönder
 
@@ -396,7 +525,9 @@ class LegendBotEngine:
             return
 
         self.log(f"✅ Hedef pencere bulundu: '{self.target_title}' (HWND: {self.target_hwnd})")
-        self.log(f"📍 Tıklama koordinatı: ({self.click_x}, {self.click_y})")
+        
+        self.log(f"📍 Tıklama koordinatı (kullanıcı tanımlı): ({self.click_x}, {self.click_y})")
+        
         self.log(f"📐 Ekran çözünürlüğü: {user32.GetSystemMetrics(0)}x{user32.GetSystemMetrics(1)}")
 
         self.is_running = True
@@ -404,10 +535,17 @@ class LegendBotEngine:
         self.total_messages_sent = 0
         self.update_counters()
 
+        # Yönetici kontrolü
+        if is_admin():
+            self.log("✅ Yönetici izni mevcut — RDP kesilirse otomatik kurtarma aktif.")
+        else:
+            self.log("⚠️ Yönetici izni YOK! RDP kesilirse otomatik kurtarma çalışmayabilir.")
+            self.log("   Botu yönetici olarak çalıştırmanız önerilir.")
+
         self._thread = threading.Thread(target=self._run_loop, daemon=True)
         self._thread.start()
-        self.log("🚀 Bot başlatıldı. SendInput modu — gerçek sistemsel tıklama aktif.")
-        self.log("⚠️  RDP kapatmadan önce BAGLANTIYI_KOPAR_BOT_CALISSIN.bat çalıştırın!")
+        self.log("🚀 Bot başlatıldı. SendInput + otomatik oturum kurtarma aktif.")
+        self.log("ℹ️  RDP bağlantısını istediğiniz zaman kapatabilirsiniz, bot otomatik devam eder.")
         self.update_status("Çalışıyor")
 
     def pause(self):
@@ -425,7 +563,17 @@ class LegendBotEngine:
         self.update_status("Durduruldu")
 
     def _ensure_window_focused(self):
-        """Hedef pencerenin açık ve odaklı olduğundan emin ol."""
+        """Hedef pencerenin açık ve odaklı olduğundan emin ol. Masaüstü kontrolü dahil."""
+        # Önce masaüstünün aktif olduğunu kontrol et
+        if not is_desktop_active():
+            self.log("⚠️ Masaüstü oturumu aktif değil! Oturum konsola aktarılıyor...")
+            if switch_to_console():
+                self.log("✅ Oturum konsola aktarıldı. 2 saniye bekleniyor...")
+                time.sleep(2.0)
+            else:
+                self.log("❌ Konsola aktarma başarısız! Yönetici izni gerekli olabilir.")
+                return False
+        
         if not self.target_hwnd or not user32.IsWindow(self.target_hwnd):
             self.log("⚠️ Hedef pencere kayboldu, yeniden aranıyor...")
             if not self.find_target():
@@ -449,7 +597,7 @@ class LegendBotEngine:
         if not self._ensure_window_focused():
             return False
 
-        # 1. Chat kutusuna tıkla
+        # Chat kutusuna doğrudan kullanıcının girdiği koordinatlarda tıkla
         real_click(self.click_x, self.click_y)
         time.sleep(0.30)
 
@@ -503,15 +651,35 @@ class LegendBotEngine:
         return True
 
     def _run_loop(self):
+        session_check_counter = 0
+        SESSION_CHECK_INTERVAL = 5  # Her 5 döngüde bir oturum kontrolü
+        
         while self.is_running:
             if self.is_paused:
                 time.sleep(0.5)
                 continue
 
+            # Periyodik oturum sağlık kontrolü
+            session_check_counter += 1
+            if session_check_counter >= SESSION_CHECK_INTERVAL:
+                session_check_counter = 0
+                if is_session_disconnected():
+                    self.log("🔌 RDP oturumu kesildi! Otomatik konsola aktarılıyor...")
+                    if switch_to_console():
+                        self.log("✅ Oturum konsola aktarıldı. Masaüstü yeniden aktif.")
+                        time.sleep(2.0)
+                        # Pencereyi yeniden bul (çözünürlük değişmiş olabilir)
+                        self.find_target()
+                    else:
+                        self.log("❌ Konsola aktarma başarısız. 10 saniye bekleniyor...")
+                        if not self._interruptible_sleep(10.0):
+                            break
+                        continue
+
             # Mesaj 1 gönder
             if not self._send_message(self.msg1, 1):
-                self.log("Mesaj 1 gönderilemedi. 3 saniye sonra tekrar denenecek...")
-                if not self._interruptible_sleep(3.0):
+                self.log("Mesaj 1 gönderilemedi. 5 saniye sonra tekrar denenecek...")
+                if not self._interruptible_sleep(5.0):
                     break
                 continue
 
@@ -522,8 +690,8 @@ class LegendBotEngine:
 
             # Mesaj 2 gönder
             if not self._send_message(self.msg2, 2):
-                self.log("Mesaj 2 gönderilemedi. 3 saniye sonra tekrar denenecek...")
-                if not self._interruptible_sleep(3.0):
+                self.log("Mesaj 2 gönderilemedi. 5 saniye sonra tekrar denenecek...")
+                if not self._interruptible_sleep(5.0):
                     break
                 continue
 

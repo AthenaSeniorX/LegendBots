@@ -1,35 +1,196 @@
-import os
 import time
 import threading
-import pyautogui
+import ctypes
+import ctypes.wintypes
 import pyperclip
-import cv2
-import numpy as np
-from PIL import ImageGrab
 import config
+
+# Win32 Constants
+WM_LBUTTONDOWN = 0x0201
+WM_LBUTTONUP = 0x0202
+WM_KEYDOWN = 0x0100
+WM_KEYUP = 0x0101
+WM_CHAR = 0x0102
+MK_LBUTTON = 0x0001
+VK_RETURN = 0x0D
+VK_CONTROL = 0x11
+
+# ctypes declarations
+user32 = ctypes.windll.user32
+kernel32 = ctypes.windll.kernel32
+
+PostMessageW = user32.PostMessageW
+SendMessageW = user32.SendMessageW
+FindWindowW = user32.FindWindowW
+EnumWindows = user32.EnumWindows
+GetWindowTextW = user32.GetWindowTextW
+GetWindowTextLengthW = user32.GetWindowTextLengthW
+IsWindowVisible = user32.IsWindowVisible
+GetWindowRect = user32.GetWindowRect
+GetClientRect = user32.GetClientRect
+ScreenToClient = user32.ScreenToClient
+SetForegroundWindow = user32.SetForegroundWindow
+IsWindow = user32.IsWindow
+
+# For clipboard operations
+OpenClipboard = user32.OpenClipboard
+CloseClipboard = user32.CloseClipboard
+EmptyClipboard = user32.EmptyClipboard
+SetClipboardData = user32.SetClipboardData
+GlobalAlloc = kernel32.GlobalAlloc
+GlobalLock = kernel32.GlobalLock
+GlobalUnlock = kernel32.GlobalUnlock
+
+GMEM_MOVEABLE = 0x0002
+CF_UNICODETEXT = 13
+
+# EnumWindows callback type
+WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
+
+
+def MAKELPARAM(x, y):
+    """Pack x, y into a single LPARAM value for PostMessage."""
+    return (y << 16) | (x & 0xFFFF)
+
+
+def find_window_by_keyword(keyword):
+    """
+    Tüm açık pencereleri tarayarak başlığında keyword geçen pencereyi bulur.
+    Returns: hwnd (int) veya None
+    """
+    result = []
+    keyword_lower = keyword.lower()
+
+    def enum_callback(hwnd, lParam):
+        if IsWindowVisible(hwnd):
+            length = GetWindowTextLengthW(hwnd)
+            if length > 0:
+                buff = ctypes.create_unicode_buffer(length + 1)
+                GetWindowTextW(hwnd, buff, length + 1)
+                title = buff.value
+                if keyword_lower in title.lower():
+                    result.append((hwnd, title))
+        return True
+
+    EnumWindows(WNDENUMPROC(enum_callback), 0)
+
+    if result:
+        # En uzun başlığa sahip olanı tercih et (ana pencere olma ihtimali yüksek)
+        result.sort(key=lambda x: len(x[1]), reverse=True)
+        return result[0]
+    return None
+
+
+def screen_to_client_coords(hwnd, screen_x, screen_y):
+    """
+    Ekran mutlak koordinatlarını pencere-client koordinatlarına çevirir.
+    PostMessage pencere-relative koordinat ister.
+    """
+    point = ctypes.wintypes.POINT(screen_x, screen_y)
+    ScreenToClient(hwnd, ctypes.byref(point))
+    return point.x, point.y
+
+
+def set_clipboard_text(text):
+    """
+    Win32 API ile doğrudan clipboard'a metin yazar.
+    pyperclip'e alternatif olarak daha güvenilir çalışır.
+    """
+    try:
+        pyperclip.copy(text)
+        return True
+    except Exception:
+        pass
+    
+    # Fallback: Win32 API ile doğrudan clipboard
+    try:
+        if OpenClipboard(0):
+            EmptyClipboard()
+            data = text.encode('utf-16-le') + b'\x00\x00'
+            h = GlobalAlloc(GMEM_MOVEABLE, len(data))
+            ptr = GlobalLock(h)
+            ctypes.memmove(ptr, data, len(data))
+            GlobalUnlock(h)
+            SetClipboardData(CF_UNICODETEXT, h)
+            CloseClipboard()
+            return True
+    except Exception:
+        try:
+            CloseClipboard()
+        except Exception:
+            pass
+    return False
+
+
+def background_click(hwnd, client_x, client_y):
+    """
+    Pencere arka plandayken bile tıklama gönderir.
+    PostMessage ile WM_LBUTTONDOWN + WM_LBUTTONUP gönderir.
+    """
+    lParam = MAKELPARAM(client_x, client_y)
+    PostMessageW(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, lParam)
+    time.sleep(0.05)
+    PostMessageW(hwnd, WM_LBUTTONUP, 0, lParam)
+
+
+def background_paste(hwnd):
+    """
+    Arka planda Ctrl+V gönderir (clipboard'dan yapıştır).
+    """
+    # Ctrl tuşunu basılı tut
+    PostMessageW(hwnd, WM_KEYDOWN, VK_CONTROL, 0)
+    time.sleep(0.03)
+    # 'V' tuşuna bas (Ctrl ile birlikte = yapıştır)
+    PostMessageW(hwnd, WM_KEYDOWN, ord('V'), 0)
+    time.sleep(0.03)
+    PostMessageW(hwnd, WM_KEYUP, ord('V'), 0)
+    time.sleep(0.03)
+    PostMessageW(hwnd, WM_KEYUP, VK_CONTROL, 0)
+
+
+def background_enter(hwnd):
+    """
+    Arka planda Enter tuşuna basar.
+    """
+    PostMessageW(hwnd, WM_KEYDOWN, VK_RETURN, 0)
+    time.sleep(0.03)
+    PostMessageW(hwnd, WM_KEYUP, VK_RETURN, 0)
+
+
+def background_type_text(hwnd, text):
+    """
+    Fallback: WM_CHAR ile her karakteri tek tek gönderir.
+    PostMessage Ctrl+V çalışmazsa bu kullanılır.
+    """
+    for char in text:
+        PostMessageW(hwnd, WM_CHAR, ord(char), 0)
+        time.sleep(0.005)
+
 
 class LegendBotEngine:
     def __init__(self, log_callback=None, alert_callback=None, status_callback=None, counter_callback=None):
         self.log_cb = log_callback or print
         self.alert_cb = alert_callback or print
         self.status_cb = status_callback or print
-        self.counter_cb = counter_callback or (lambda sent, bought: None)
+        self.counter_cb = counter_callback or (lambda sent: None)
 
         self.is_running = False
         self.is_paused = False
-        self.purchase_count = 0
         self.total_messages_sent = 0
 
         self.msg1 = config.DEFAULT_MESSAGE_1
         self.msg2 = config.DEFAULT_MESSAGE_2
         self.cycle_interval = config.DEFAULT_CYCLE_INTERVAL
         self.inter_delay = config.INTER_MESSAGE_DELAY
-        self.purchase_quantity = config.PURCHASE_QUANTITY
 
-        # PyAutoGUI Safety settings
-        pyautogui.FAILSAFE = True
-        pyautogui.PAUSE = 0.1
+        # Win32 settings
+        self.click_x = config.DEFAULT_CLICK_X  # Ekran mutlak X
+        self.click_y = config.DEFAULT_CLICK_Y  # Ekran mutlak Y
+        self.window_keyword = config.WINDOW_TITLE_KEYWORD
+        self.use_wm_char_fallback = False  # WM_CHAR ile karakter karakter gönder
 
+        self.target_hwnd = None
+        self.target_title = ""
         self._thread = None
 
     def log(self, message):
@@ -39,9 +200,19 @@ class LegendBotEngine:
         self.status_cb(status_str)
 
     def update_counters(self):
-        self.counter_cb(self.total_messages_sent, self.purchase_count)
+        self.counter_cb(self.total_messages_sent)
 
-    def start(self, msg1=None, msg2=None, interval=None):
+    def find_target(self):
+        """Hedef pencereyi arar ve hwnd döner."""
+        result = find_window_by_keyword(self.window_keyword)
+        if result:
+            self.target_hwnd, self.target_title = result
+            return True
+        self.target_hwnd = None
+        self.target_title = ""
+        return False
+
+    def start(self, msg1=None, msg2=None, interval=None, click_x=None, click_y=None, keyword=None):
         if self.is_running:
             self.log("Bot zaten çalışıyor.")
             return
@@ -49,16 +220,31 @@ class LegendBotEngine:
         if msg1: self.msg1 = msg1
         if msg2: self.msg2 = msg2
         if interval: self.cycle_interval = float(interval)
+        if click_x is not None: self.click_x = int(click_x)
+        if click_y is not None: self.click_y = int(click_y)
+        if keyword: self.window_keyword = keyword
+
+        # Hedef pencereyi bul
+        if not self.find_target():
+            self.log(f"❌ HATA: '{self.window_keyword}' başlıklı pencere bulunamadı! Bot başlatılamıyor.")
+            self.alert_cb("Pencere Bulunamadı", f"'{self.window_keyword}' başlığını içeren pencere bulunamadı.\n\nOyun istemcisinin açık olduğundan emin olun.")
+            return
+
+        self.log(f"✅ Hedef pencere bulundu: '{self.target_title}' (HWND: {self.target_hwnd})")
+
+        # Ekran koordinatlarını pencere-client koordinatlarına çevir
+        client_x, client_y = screen_to_client_coords(self.target_hwnd, self.click_x, self.click_y)
+        self.log(f"📍 Tıklama koordinatı: Ekran({self.click_x}, {self.click_y}) → Pencere({client_x}, {client_y})")
 
         self.is_running = True
         self.is_paused = False
-        self.purchase_count = 0
         self.total_messages_sent = 0
         self.update_counters()
 
         self._thread = threading.Thread(target=self._run_loop, daemon=True)
         self._thread.start()
-        self.log("Bot başlatıldı. Birincil Öncelik: Borazan Satın Alma Kontrolü.")
+        self.log("🚀 Bot başlatıldı. Win32 API arka plan modu aktif.")
+        self.log("ℹ️  RDP bağlantısını kesseniz bile bot çalışmaya devam edecek.")
         self.update_status("Çalışıyor")
 
     def pause(self):
@@ -75,262 +261,100 @@ class LegendBotEngine:
         self.log("Bot durduruldu.")
         self.update_status("Durduruldu")
 
+    def _validate_window(self):
+        """Hedef pencerenin hâlâ açık olup olmadığını kontrol eder."""
+        if self.target_hwnd and IsWindow(self.target_hwnd):
+            return True
+        
+        # Pencere kapanmış, yeniden bulmaya çalış
+        self.log("⚠️ Hedef pencere kayboldu, yeniden aranıyor...")
+        if self.find_target():
+            self.log(f"✅ Pencere yeniden bulundu: '{self.target_title}' (HWND: {self.target_hwnd})")
+            return True
+        
+        self.log("❌ Hedef pencere bulunamadı! Oyun kapatılmış olabilir.")
+        return False
+
+    def _send_message(self, text, msg_num):
+        """
+        Tek bir mesajı arka planda gönderir:
+        1. Chat kutusuna tıkla (PostMessage)
+        2. Metni clipboard'a kopyala
+        3. Ctrl+V ile yapıştır (PostMessage)
+        4. Enter ile gönder (PostMessage)
+        """
+        if not self._validate_window():
+            return False
+
+        hwnd = self.target_hwnd
+
+        # Ekran → Client koordinat çevirisi (her seferinde, pencere taşınmış olabilir)
+        client_x, client_y = screen_to_client_coords(hwnd, self.click_x, self.click_y)
+
+        # 1. Chat kutusuna tıkla
+        background_click(hwnd, client_x, client_y)
+        time.sleep(0.15)
+
+        # 2. Metni clipboard'a kopyala
+        set_clipboard_text(text)
+        time.sleep(0.10)
+
+        # 3. Yapıştır
+        if self.use_wm_char_fallback:
+            # Fallback: Her karakteri tek tek gönder
+            background_type_text(hwnd, text)
+        else:
+            # Birincil: Ctrl+V ile yapıştır
+            background_paste(hwnd)
+        time.sleep(0.15)
+
+        # 4. Enter ile gönder
+        background_enter(hwnd)
+
+        self.total_messages_sent += 1
+        self.update_counters()
+        self.log(f"✉️ Mesaj {msg_num} gönderildi (#{self.total_messages_sent}): '{text[:40]}...'")
+        return True
+
+    def _interruptible_sleep(self, duration):
+        """Kesintiye uğrayabilen bekleme. Bot durdurulursa erken çıkar."""
+        start = time.time()
+        while time.time() - start < duration:
+            if not self.is_running:
+                return False
+            while self.is_paused and self.is_running:
+                time.sleep(0.3)
+            time.sleep(0.2)
+        return True
+
     def _run_loop(self):
         while self.is_running:
             if self.is_paused:
                 time.sleep(0.5)
                 continue
 
-            # --- PRE-CHECK: Top Priority Check for Purchase Modal ---
-            modal_status = self.check_and_handle_purchase_modal()
-            if modal_status == "LIMIT_REACHED" or not self.is_running:
-                break
-            if modal_status == "PURCHASED":
-                time.sleep(0.5)
+            # Mesaj 1 gönder
+            if not self._send_message(self.msg1, 1):
+                self.log("Mesaj 1 gönderilemedi. 3 saniye sonra tekrar denenecek...")
+                if not self._interruptible_sleep(3.0):
+                    break
                 continue
 
-            # --- STEP 1: Locate Chat Box ---
-            chat_pos = self.locate_chat_box()
-            if not chat_pos:
-                self.log("Chat kutusu / Emoji ikonu alt sol bölgede bulunamadı. Bekleniyor...")
-                time.sleep(1.0)
+            # Mesajlar arası bekleme
+            self.log(f"⏳ {self.inter_delay} saniye bekleniyor...")
+            if not self._interruptible_sleep(self.inter_delay):
+                break
+
+            # Mesaj 2 gönder
+            if not self._send_message(self.msg2, 2):
+                self.log("Mesaj 2 gönderilemedi. 3 saniye sonra tekrar denenecek...")
+                if not self._interruptible_sleep(3.0):
+                    break
                 continue
 
-            chat_x, chat_y = chat_pos
-
-            # --- STEP 2: Pre-check modal BEFORE sending Message 1 ---
-            modal_status = self.check_and_handle_purchase_modal()
-            if modal_status == "LIMIT_REACHED" or not self.is_running:
+            # Döngü aralığı
+            self.log(f"✅ Döngü tamamlandı. Toplam: {self.total_messages_sent} mesaj. Bekleniyor ({self.cycle_interval} sn)...")
+            if not self._interruptible_sleep(self.cycle_interval):
                 break
-            if modal_status == "PURCHASED":
-                continue
-
-            # Send Message 1
-            self.log(f"Mesaj 1 gönderiliyor (#{self.total_messages_sent + 1}): '{self.msg1[:35]}...'")
-            self.send_text(chat_x, chat_y, self.msg1)
-            self.total_messages_sent += 1
-            self.update_counters()
-            
-            # --- STEP 3: Post-check modal IMMEDIATELY after Message 1 ---
-            time.sleep(0.2)
-            modal_status = self.check_and_handle_purchase_modal()
-            if modal_status == "LIMIT_REACHED" or not self.is_running:
-                break
-
-            # --- STEP 4: 1.0 Second Delay between Message 1 and Message 2 ---
-            self.log(f"{self.inter_delay} saniye bekleniyor...")
-            start_wait = time.time()
-            while time.time() - start_wait < self.inter_delay:
-                if not self.is_running:
-                    break
-                modal_status = self.check_and_handle_purchase_modal()
-                if modal_status == "LIMIT_REACHED" or not self.is_running:
-                    break
-                time.sleep(0.2)
-
-            if modal_status == "LIMIT_REACHED" or not self.is_running:
-                break
-
-            # --- STEP 5: Pre-check modal BEFORE sending Message 2 ---
-            modal_status = self.check_and_handle_purchase_modal()
-            if modal_status == "LIMIT_REACHED" or not self.is_running:
-                break
-            if modal_status == "PURCHASED":
-                continue
-
-            # Send Message 2
-            self.log(f"Mesaj 2 gönderiliyor (#{self.total_messages_sent + 1}): '{self.msg2[:35]}...'")
-            self.send_text(chat_x, chat_y, self.msg2)
-            self.total_messages_sent += 1
-            self.update_counters()
-
-            # --- STEP 6: Post-check modal IMMEDIATELY after Message 2 ---
-            time.sleep(0.2)
-            modal_status = self.check_and_handle_purchase_modal()
-            if modal_status == "LIMIT_REACHED" or not self.is_running:
-                break
-
-            # --- STEP 7: Cooldown Interval between rounds with continuous modal monitoring ---
-            self.log(f"Döngü tamamlandı. Gönderilen Toplam Mesaj: {self.total_messages_sent}. Bekleniyor ({self.cycle_interval} sn)...")
-            cooldown_start = time.time()
-            while time.time() - cooldown_start < self.cycle_interval:
-                if not self.is_running:
-                    break
-                while self.is_paused and self.is_running:
-                    time.sleep(0.5)
-
-                modal_status = self.check_and_handle_purchase_modal()
-                if modal_status == "LIMIT_REACHED" or not self.is_running:
-                    break
-                if modal_status == "PURCHASED":
-                    break
-
-                time.sleep(0.5)
 
         self.update_status("Durduruldu")
-
-    def send_text(self, click_x, click_y, text):
-        """Focuses chat box and pastes text accurately via Clipboard."""
-        pyautogui.click(click_x, click_y)
-        time.sleep(0.15)
-        pyperclip.copy(text)
-        pyautogui.hotkey('ctrl', 'v')
-        time.sleep(0.15)
-        pyautogui.press('enter')
-
-    def capture_screen(self):
-        """Captures full screen as numpy BGR array for OpenCV."""
-        screenshot = ImageGrab.grab()
-        return cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-
-    def find_template(self, template_key, confidence=0.60, region_bgr=None, region_offset=(0,0)):
-        """Locates template inside specified image or full screen using OpenCV."""
-        template_path = config.TEMPLATE_PATHS.get(template_key)
-        if not template_path or not os.path.exists(template_path):
-            return None
-
-        template = cv2.imread(template_path, cv2.IMREAD_COLOR)
-        if template is None:
-            return None
-
-        if region_bgr is None:
-            region_bgr = self.capture_screen()
-
-        th, tw = template.shape[:2]
-        rh, rw = region_bgr.shape[:2]
-
-        if rh < th or rw < tw:
-            return None
-
-        res = cv2.matchTemplate(region_bgr, template, cv2.TM_CCOEFF_NORMED)
-        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-
-        if max_val >= confidence:
-            ox, oy = region_offset
-            center_x = ox + max_loc[0] + tw // 2
-            center_y = oy + max_loc[1] + th // 2
-            return {
-                "center": (center_x, center_y),
-                "box": (ox + max_loc[0], oy + max_loc[1], tw, th),
-                "confidence": max_val
-            }
-        return None
-
-    def locate_chat_box(self, screen_bgr=None):
-        """
-        Finds emoji icon or chat area strictly in bottom-left portion of screen.
-        Returns click coordinates for chat input box.
-        """
-        if screen_bgr is None:
-            screen_bgr = self.capture_screen()
-
-        sh, sw = screen_bgr.shape[:2]
-
-        crop_y1 = int(sh * 0.55)
-        crop_x2 = int(sw * 0.50)
-        bottom_left_region = screen_bgr[crop_y1:sh, 0:crop_x2]
-
-        for tmpl_key in ["emoji_icon", "emoji_chat"]:
-            match = self.find_template(
-                tmpl_key, 
-                confidence=0.55, 
-                region_bgr=bottom_left_region, 
-                region_offset=(0, crop_y1)
-            )
-            if match:
-                ex, ey = match["center"]
-                return (ex - 75, ey)
-
-        dunya_match = self.find_template(
-            "dunya_tab", 
-            confidence=0.55, 
-            region_bgr=bottom_left_region, 
-            region_offset=(0, crop_y1)
-        )
-        if dunya_match:
-            dx, dy = dunya_match["center"]
-            return (dx + 120, dy + 25)
-
-        return None
-
-    def check_and_handle_purchase_modal(self):
-        """
-        TOP PRIORITY CHECK:
-        Detects if the Satın Al modal is open on screen.
-        If open 1st time: Focuses exact quantity input box, types 666, clicks Satın Al.
-        If open 2nd time: Displays 'Haklarımız bitti' popup and halts bot immediately.
-        """
-        screen_bgr = self.capture_screen()
-
-        header_match = self.find_template("satin_al_header", confidence=0.55, region_bgr=screen_bgr)
-        item_match = self.find_template("borazan_item", confidence=0.55, region_bgr=screen_bgr)
-        btn_match = self.find_template("satin_al_btn", confidence=0.55, region_bgr=screen_bgr)
-        qty_match_check = self.find_template("quantity_box", confidence=0.55, region_bgr=screen_bgr)
-        num1_match_check = self.find_template("num_1_digit", confidence=0.55, region_bgr=screen_bgr)
-
-        is_modal_open = bool(header_match or item_match or btn_match or qty_match_check or num1_match_check)
-
-        if not is_modal_open:
-            return "NO_MODAL"
-
-        self.purchase_count += 1
-        self.update_counters()
-        self.log(f"🚨 Satın Al (Borazan) ekranı algılandı! (Satın Alma Sayısı: {self.purchase_count}/2)")
-
-        if self.purchase_count >= config.MAX_PURCHASE_COUNT:
-            self.log(f"⛔ HAKLARIMIZ BİTTİ! 666 Borazan mesajı tamamlandı ({self.total_messages_sent} mesaj gönderildi). Satın Alma ekranı 2. defa geldi. Bot durduruluyor...")
-            self.is_running = False
-            self.alert_cb(
-                "Haklarımız Bitti!", 
-                f"Satın alma ekranı 2. defa geldi!\n\nToplam Gönderilen Mesaj: {self.total_messages_sent}\n666 Borazan hakkı tamamlanmıştır."
-            )
-            return "LIMIT_REACHED"
-
-        # --- 1st Time Purchase Execution ---
-        self.log("🛒 1. KEZ SATIN ALMA İŞLEMİ: Miktar kutusunun tam ortasına tıklanıp '666' yazılıyor...")
-        
-        # 1. Locate Exact Quantity Input Box Center
-        qty_match = qty_match_check or num1_match_check or self.find_template("quantity_box", confidence=0.50, region_bgr=screen_bgr)
-        
-        if qty_match:
-            qx, qy = qty_match["center"]
-        elif btn_match:
-            bx, by = btn_match["center"]
-            # Pixel Offset: input box center is exactly 62px left, 78px above Satın Al button
-            qx, qy = bx - 62, by - 78
-        elif header_match:
-            hx, hy = header_match["center"]
-            # Pixel Offset: input box center is exactly 10px right, 172px below header center
-            qx, qy = hx + 10, hy + 172
-        else:
-            sh, sw = screen_bgr.shape[:2]
-            qx, qy = sw // 2, sh // 2
-
-        # Double click directly inside the exact input box
-        pyautogui.doubleClick(qx, qy)
-        time.sleep(0.15)
-
-        # Clear text completely
-        pyautogui.hotkey('ctrl', 'a')
-        time.sleep(0.1)
-        pyautogui.press('backspace')
-        time.sleep(0.1)
-
-        # Type '666'
-        pyperclip.copy(self.purchase_quantity)
-        pyautogui.hotkey('ctrl', 'v')
-        time.sleep(0.2)
-        self.log(f"Miktar kutusunun tam ortasına (x={qx}, y={qy}) '{self.purchase_quantity}' yazıldı.")
-
-        # 2. Click 'Satın Al' button
-        btn_match_new = self.find_template("satin_al_btn", confidence=0.50, region_bgr=screen_bgr)
-        if btn_match_new:
-            bx, by = btn_match_new["center"]
-        else:
-            bx, by = qx + 62, qy + 78
-
-        pyautogui.click(bx, by)
-        self.log(f"'Satın Al' butonuna (x={bx}, y={by}) tıklandı. 666 Borazan mesaj hakkı başladı.")
-
-        time.sleep(config.PAUSE_AFTER_PURCHASE)
-        return "PURCHASED"
